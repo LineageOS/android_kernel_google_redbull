@@ -70,6 +70,10 @@ $(simple-targets): $(obj)/conf
 
 PHONY += oldnoconfig silentoldconfig savedefconfig defconfig
 
+ifneq ($(VARIANT_DEFCONFIG),)
+export KCONFIG_VARIANT := arch/$(SRCARCH)/configs/$(VARIANT_DEFCONFIG)
+endif
+
 # oldnoconfig is an alias of olddefconfig, because people already are dependent
 # on its behavior (sets new symbols to their default value but not 'n') with the
 # counter-intuitive name.
