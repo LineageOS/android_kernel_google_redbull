@@ -389,7 +389,7 @@ endif
 # way no critical debug feature will be enabled for perf and shipment
 # builds. Other OEMs are also protected using the TARGET_BUILD_VARIANT
 # config.
-ifneq ($(TARGET_BUILD_VARIANT),user)
+ifeq ($(TARGET_BUILD_VARIANT),eng)
 	ifeq ($(CONFIG_LITHIUM), y)
 		CONFIG_FEATURE_PKTLOG := n
 	else
@@ -874,7 +874,7 @@ ifneq ($(CONFIG_HIF_USB), y)
 CONFIG_WLAN_LOGGING_SOCK_SVC := y
 endif
 
-ifneq ($(TARGET_BUILD_VARIANT),user)
+ifeq ($(TARGET_BUILD_VARIANT),eng)
 CONFIG_DESC_DUP_DETECT_DEBUG := y
 CONFIG_DEBUG_RX_RING_BUFFER := y
 endif
