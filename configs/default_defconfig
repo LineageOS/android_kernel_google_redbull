@@ -123,6 +123,7 @@ ifneq ($(CONFIG_MOBILE_ROUTER), y)
 CONFIG_QCOM_TDLS := y
 
 CONFIG_WLAN_SYSFS := y
+CONFIG_WLAN_POWER_DEBUG := y
 #Enable Beacon Reception Stats
 CONFIG_FEATURE_BECN_STATS := y
 endif
@@ -370,6 +371,8 @@ CONFIG_TX_TID_OVERRIDE := y
 CONFIG_WLAN_CLD_PM_QOS := y
 CONFIG_REO_DESC_DEFER_FREE := y
 CONFIG_RXDMA_ERR_PKT_DROP := y
+CONFIG_DELIVERY_TO_STACK_STATUS_CHECK := y
+
 endif
 
 # As per target team, build is done as follows:
@@ -401,8 +404,6 @@ ifeq ($(CONFIG_DEBUG_FS), y)
        # Flag to enable debugfs. Depends on CONFIG_DEBUG_FS in kernel
        # configuration.
        CONFIG_WLAN_DEBUGFS := y
-
-       CONFIG_WLAN_POWER_DEBUGFS := y
 
        CONFIG_WLAN_MWS_INFO_DEBUGFS := y
 endif
@@ -830,6 +831,7 @@ ifeq ($(CONFIG_LITHIUM), y)
 		CONFIG_WLAN_FEATURE_DP_EVENT_HISTORY := y
 		CONFIG_HIF_CE_DEBUG_DATA_BUF := y
 		CONFIG_WLAN_RECORD_RX_PADDR := y
+		CONFIG_HIF_CPU_PERF_AFFINE_MASK := y
 	endif
 	CONFIG_WLAN_SUPPORT_DATA_STALL := y
 	CONFIG_WLAN_DP_PER_RING_TYPE_CONFIG := y
