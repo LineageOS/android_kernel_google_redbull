@@ -4689,6 +4689,7 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 	int ret = 0;
 	int slot_width = TDM_SLOT_WIDTH_BITS;
 	int channels, slots = TDM_MAX_SLOTS;
+	int fmt = SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_IB_NF | SND_SOC_DAIFMT_DSP_A;
 	unsigned int slot_mask, rate, clk_freq;
 	unsigned int *slot_offset;
 	struct tdm_dev_config *config;
@@ -4821,6 +4822,40 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		pr_err("%s: failed to set tdm clk, err:%d\n",
 			__func__, ret);
+
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK && cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX) {
+			/*Codec Support - Added for TAS256X*/
+		ret = snd_soc_dai_set_tdm_slot(codec_dai, slot_mask, 0,
+			slots, slot_width);
+		if (ret < 0) {
+			pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
+				__func__, ret);
+			goto end;
+		}
+
+		ret = snd_soc_dai_set_fmt(codec_dai, fmt);
+		if (ret < 0) {
+			pr_err("%s: failed to set tx fmt for codec, err:%d\n",
+				__func__, ret);
+			goto end;
+		}
+	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE && cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX) {
+				/*Codec Support - Added for TAS256X*/
+		ret = snd_soc_dai_set_tdm_slot(codec_dai, slot_mask, 0,
+			slots, slot_width);
+		if (ret < 0) {
+			pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
+				__func__, ret);
+			goto end;
+		}
+
+		ret = snd_soc_dai_set_fmt(codec_dai, fmt);
+		if (ret < 0) {
+			pr_err("%s: failed to set tx fmt for codec, err:%d\n",
+				__func__, ret);
+			goto end;
+		}
+	}
 
 	if (cpu_dai->id == AFE_PORT_ID_PRIMARY_TDM_TX) {
 		ret = snd_soc_dai_set_tdm_slot(codec_dai, 1, 0, 8, 32);
