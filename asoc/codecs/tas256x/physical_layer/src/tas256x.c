@@ -1,7 +1,7 @@
-#include "tas256x/inc/tas256x.h"
-#include "tas256x/inc/tas2562.h"
-#include "tas256x/inc/tas2564.h"
-#include "tas256x/inc/tas256x-device.h"
+#include "physical_layer/inc/tas256x.h"
+#include "physical_layer/inc/tas2562.h"
+#include "physical_layer/inc/tas2564.h"
+#include "physical_layer/inc/tas256x-device.h"
 
 #define LOG_TAG "[tas256x]"
 
@@ -219,6 +219,7 @@ int tas256x_update_default_params(struct tas256x_priv *p_tas256x, int ch)
 		p_tas256x->devs[ch-1]->bosd_thd = 2; /*2.7 V*/
 		p_tas256x->devs[ch-1]->bst_vltg = 0xA; /*Mode = speaker*/
 		p_tas256x->devs[ch-1]->bst_ilm = 0x36; /*0dB*/
+		p_tas256x->devs[ch-1]->ampoutput_lvl = 0x10; /*15.5dBV: 8 + 0.5 * ampoutput_lvl */
 		p_tas256x->devs[ch-1]->lim_switch = 0; /*-9dB*/
 		p_tas256x->devs[ch-1]->lim_att_rate = 1; /*9V*/
 		p_tas256x->devs[ch-1]->lim_att_stp_size = 1; /*4V*/
@@ -246,6 +247,7 @@ int tas256x_update_default_params(struct tas256x_priv *p_tas256x, int ch)
 		p_tas256x->devs[ch-1]->bosd_thd = 2; /*2.7 V*/
 		p_tas256x->devs[ch-1]->bst_vltg = 13; /*Mode = speaker*/
 		p_tas256x->devs[ch-1]->bst_ilm = 0x39; /*0dB*/
+		p_tas256x->devs[ch-1]->ampoutput_lvl = 0xD; /*16dBV: 9.5 + 0.5 * ampoutput_lvl */
 		p_tas256x->devs[ch-1]->lim_switch = 0; /*-9dB*/
 		p_tas256x->devs[ch-1]->lim_att_rate = 1; /*9V*/
 		p_tas256x->devs[ch-1]->lim_att_stp_size = 1; /*4V*/
@@ -263,6 +265,8 @@ int tas256x_update_default_params(struct tas256x_priv *p_tas256x, int ch)
 		p_tas256x->devs[ch-1]->reciever_enable = 0;
 	}
 	p_tas256x->icn_sw = 0;
+	p_tas256x->mn_rx_slot_map[0] = 0;
+	p_tas256x->mn_rx_slot_map[1] = 1;
 	return n_result;
 }
 
@@ -275,6 +279,14 @@ int tas256x_set_power_up(struct tas256x_priv *p_tas256x,
 		chn, TAS256X_POWERCONTROL,
 		TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
 		TAS256X_POWERCONTROL_OPERATIONALMODE10_ACTIVE);
+
+	/* Let Power on the device */
+	msleep(2);
+	/* Enable Comparator Hysteresis */
+	n_result = p_tas256x->update_bits(p_tas256x, chn,
+		TAS256X_MISC_CLASSD,
+		TAS256X_CMP_HYST_MASK,
+		(0x01 << TAS256X_CMP_HYST_SHIFT));
 
 	return n_result;
 }
@@ -296,6 +308,12 @@ int tas256x_set_power_shutdown(struct tas256x_priv *p_tas256x,
 	enum channel chn)
 {
 	int n_result = 0;
+
+	/*Disable Comparator Hysteresis befor Power Down */
+	n_result = p_tas256x->update_bits(p_tas256x, chn,
+		TAS256X_MISC_CLASSD,
+		TAS256X_CMP_HYST_MASK,
+		(0x00 << TAS256X_CMP_HYST_SHIFT));
 
 	n_result = p_tas256x->update_bits(p_tas256x, chn,
 		TAS256X_POWERCONTROL,
@@ -530,24 +548,18 @@ int tas256x_set_samplerate(struct tas256x_priv *p_tas256x,
 }
 
 /*
- *rx_edge = 0; Falling
- *= 1; Rising
+ *rx_edge = 0; Rising
+ *= 1; Falling
  */
 int tas256x_tx_set_edge(struct tas256x_priv *p_tas256x,
 	unsigned int tx_edge, int ch)
 {
 	int n_result = 0;
 
-	if (tx_edge)
-		n_result |= p_tas256x->update_bits(p_tas256x, ch,
-			TAS256X_TDMConfigurationReg4,
-			TAS256X_TDMCONFIGURATIONREG4_TXEDGE_MASK,
-			TAS256X_TDMCONFIGURATIONREG4_TXEDGE_RISING);
-	else
-		n_result |= p_tas256x->update_bits(p_tas256x, ch,
-			TAS256X_TDMConfigurationReg4,
-			TAS256X_TDMCONFIGURATIONREG4_TXEDGE_MASK,
-			TAS256X_TDMCONFIGURATIONREG4_TXEDGE_FALLING);
+	n_result |= p_tas256x->update_bits(p_tas256x, ch,
+		TAS256X_TDMConfigurationReg4,
+		TAS256X_TDMCONFIGURATIONREG4_TXEDGE_MASK,
+		(tx_edge << TAS256X_TDMCONFIGURATIONREG4_TXEDGE_SHIFT));
 
 	if (n_result == 0)
 		p_tas256x->mn_tx_edge = tx_edge;
@@ -556,24 +568,18 @@ int tas256x_tx_set_edge(struct tas256x_priv *p_tas256x,
 }
 
 /*
- *rx_edge = 0; Falling
- *= 1; Rising
+ *rx_edge = 0; Rising
+ *= 1; Falling
  */
 int tas256x_rx_set_edge(struct tas256x_priv *p_tas256x,
 	unsigned int rx_edge, int ch)
 {
 	int n_result = 0;
 
-	if (rx_edge)
-		n_result |= p_tas256x->update_bits(p_tas256x, ch,
+	n_result |= p_tas256x->update_bits(p_tas256x, ch,
 			TAS256X_TDMCONFIGURATIONREG1,
 			TAS256X_TDMCONFIGURATIONREG1_RXEDGE_MASK,
-			TAS256X_TDMCONFIGURATIONREG1_RXEDGE_RISING);
-	else
-		n_result |= p_tas256x->update_bits(p_tas256x, ch,
-			TAS256X_TDMCONFIGURATIONREG1,
-			TAS256X_TDMCONFIGURATIONREG1_RXEDGE_MASK,
-			TAS256X_TDMCONFIGURATIONREG1_RXEDGE_FALLING);
+			(rx_edge << TAS256X_TDMCONFIGURATIONREG1_RXEDGE_SHIFT));
 
 	if (n_result == 0)
 		p_tas256x->mn_rx_edge = rx_edge;
@@ -592,7 +598,24 @@ int tas256x_rx_set_start_slot(struct tas256x_priv *p_tas256x,
 		TAS256X_TDMCONFIGURATIONREG1_RXOFFSET51_SHIFT));
 
 	if (n_result == 0)
-		p_tas256x->mn_rx_start_slot = rx_start_slot;
+		p_tas256x->mn_rx_offset = rx_start_slot;
+
+	return n_result;
+}
+
+int tas256x_tx_set_start_slot(struct tas256x_priv *p_tas256x,
+	unsigned int tx_start_slot, int ch)
+{
+	int n_result = 0;
+
+	n_result |= p_tas256x->update_bits(p_tas256x, ch,
+		TAS256X_TDMConfigurationReg4,
+		TAS256X_TDMCONFIGURATIONREG4_TXOFFSET31_MASK,
+		(tx_start_slot <<
+		TAS256X_TDMCONFIGURATIONREG4_TXOFFSET31_SHIFT));
+
+	if (n_result == 0)
+		p_tas256x->mn_tx_offset = tx_start_slot;
 
 	return n_result;
 }
@@ -613,7 +636,7 @@ int tas256x_rx_set_frame_start(struct tas256x_priv *p_tas256x,
 	return n_result;
 }
 
-int tas256x_rx_set_slot(struct tas256x_priv *p_tas256x,
+int tas256x_rx_set_slot_len(struct tas256x_priv *p_tas256x,
 	int slot_width, int ch)
 {
 	int n_result = -1;
@@ -626,11 +649,6 @@ int tas256x_rx_set_slot(struct tas256x_priv *p_tas256x,
 		TAS256X_TDMCONFIGURATIONREG2_RXSLEN10_16BITS);
 	break;
 	case 24:
-	n_result = p_tas256x->update_bits(p_tas256x, ch,
-		TAS256X_TDMCONFIGURATIONREG2,
-		TAS256X_TDMCONFIGURATIONREG2_RXSLEN10_MASK,
-		TAS256X_TDMCONFIGURATIONREG2_RXSLEN10_24BITS);
-	break;
 	case 32:
 	n_result = p_tas256x->update_bits(p_tas256x, ch,
 		TAS256X_TDMCONFIGURATIONREG2,
@@ -645,6 +663,26 @@ int tas256x_rx_set_slot(struct tas256x_priv *p_tas256x,
 	if (n_result == 0)
 		p_tas256x->mn_rx_slot_width = slot_width;
 
+	return n_result;
+}
+
+int tas256x_rx_set_slot(struct tas256x_priv *p_tas256x,
+	int slot, int ch)
+{
+	int n_result = -1;
+	if (ch == channel_right)
+		n_result = p_tas256x->update_bits(p_tas256x, ch,
+			TAS256X_TDMCONFIGURATIONREG3,
+			TAS256X_TDMCONFIGURATIONREG3_RXSLOTRIGHT74_MASK,
+			(slot << TAS256X_TDMCONFIGURATIONREG3_RXSLOTRIGHT74_SHIFT));
+	else/*Assumed Left*/
+		n_result = p_tas256x->update_bits(p_tas256x, ch,
+			TAS256X_TDMCONFIGURATIONREG3,
+			TAS256X_TDMCONFIGURATIONREG3_RXSLOTLeft30_Mask,
+			(slot << TAS256X_TDMCONFIGURATIONREG3_RXSLOTLeft30_SHIFT));
+
+	if (n_result == 0)
+		p_tas256x->mn_rx_slot_map[ch-1] = slot;
 	return n_result;
 }
 
@@ -807,7 +845,7 @@ int tas256x_boost_volt_update(struct tas256x_priv *p_tas256x, int value,
 	} else if (value == DEVICE_TAS2564) {
 		/*Update Channel Gain to 16dBV*/
 		n_result = p_tas256x->update_bits(p_tas256x, ch,
-			TAS256X_PLAYBACKCONFIGURATIONREG0,
+			TAS2564_PLAYBACKCONFIGURATIONREG0,
 			TAS2564_PLAYBACKCONFIGURATION_AMP_LEVEL_MASK,
 			TAS2564_AMP_LEVEL_16dBV);
 	}
@@ -829,7 +867,7 @@ int tas256x_set_tx_config(struct tas256x_priv *p_tas256x, int value, int ch)
 {
 	int n_result = 0;
 
-#ifdef CONFIG_PLATFORM_EXYNOS
+#if IS_ENABLED(CONFIG_PLATFORM_EXYNOS)
 	if (p_tas256x->mn_channels == 2) {
 		n_result = p_tas256x->write(p_tas256x, channel_left,
 				TAS256X_TDMConfigurationReg4, 0xf3);
@@ -1161,6 +1199,31 @@ int tas256x_update_boost_voltage(struct tas256x_priv *p_tas256x,
 	return n_result;
 }
 
+int tas256x_update_ampoutput_level(struct tas256x_priv *p_tas256x,
+	int value, int ch)
+{
+	int n_result = -1;
+
+	if ((value >= 1) && (value < 0x1C)) {
+		if (p_tas256x->devs[ch-1]->device_id == DEVICE_TAS2562) {
+			n_result = p_tas256x->update_bits(p_tas256x,
+				ch, TAS2562_PLAYBACKCONFIGURATIONREG0,
+				TAS2562_PLAYBACKCONFIGURATIONREG0_AMPLIFIERLEVEL51_MASK,
+				value << TAS2562_PLAYBACKCONFIGURATIONREG0_AMPLIFIERLEVEL51_SHIFT);
+		} else if (p_tas256x->devs[ch-1]->device_id == DEVICE_TAS2564) {
+				n_result = p_tas256x->update_bits(p_tas256x,
+					ch, TAS2564_PLAYBACKCONFIGURATIONREG0,
+					TAS2562_PLAYBACKCONFIGURATIONREG0_AMPLIFIERLEVEL51_MASK,
+					value << TAS2562_PLAYBACKCONFIGURATIONREG0_AMPLIFIERLEVEL51_SHIFT);
+		}
+	}
+
+	if (n_result == 0)
+		p_tas256x->devs[ch-1]->ampoutput_lvl = value;
+
+	return n_result;
+}
+
 int tas256x_update_current_limit(struct tas256x_priv *p_tas256x,
 	int value, int ch)
 {
@@ -1476,10 +1539,9 @@ int tas256x_enable_reciever_mode(struct tas256x_priv *p_tas256x, int enable,
 				TAS256X_MISCCONFIGURATIONREG0,
 				0xca);
 		/*Mask reaction of idle channel detect on IV sense*/
-		n_result |= p_tas256x->update_bits(p_tas256x, ch,
-			TAS256X_ICN_SW_REG,
-			TAS256X_ICN_IVSENSE_MASK,
-			0x02);
+		n_result |=
+			p_tas256x->write(p_tas256x, ch, TAS256X_ICN_SW_REG,
+				0x02);
 	} else {
 		/*Unlock test page*/
 		n_result =
@@ -1496,11 +1558,11 @@ int tas256x_enable_reciever_mode(struct tas256x_priv *p_tas256x, int enable,
 		/*Force the device in idle channel mode*/
 		n_result |=
 			p_tas256x->write(p_tas256x, ch, TAS256X_ICN_MODE,
-				0x00);
+				0x10);
 		/* ICN improvement*/
 		n_result |=
 			p_tas256x->write(p_tas256x, ch, TAS256X_ICN_IMPROVE,
-				0x10);
+				0x1d);
 		/*Enable IRQ pull-up, disable SSM*/
 		n_result |=
 			p_tas256x->write(p_tas256x, ch,

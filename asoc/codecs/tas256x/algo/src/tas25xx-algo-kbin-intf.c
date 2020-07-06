@@ -29,6 +29,7 @@
 #include "algo/inc/tas_smart_amp_v2.h"
 #include "algo/inc/tas25xx-calib.h"
 #include "tas25xx-algo-bin-utils.h"
+#include "tas25xx-algo-intf.h"
 
 #define POISON_VAL		0xDEADDEAD
 #define MAX_STRING		(300)
@@ -187,7 +188,7 @@ static int tas25xx_send_kbin_params(void)
 				size = MIN(100, param_sz_rem);
 				param_id = TAS_CALC_PARAM_IDX(current_idx, size, ch);
 				ret = tas25xx_smartamp_algo_ctrl((u8 *)data, param_id,
-					TAS_SET_PARAM, size * sizeof(int), AFE_SMARTAMP_MODULE_RX);
+					TAS_SET_PARAM, size * sizeof(int), TISA_MOD_RX);
 				if (ret) {
 					pr_info("TI-SmartPA: %s data send error = %d\n", __func__, ret);
 				}
@@ -207,12 +208,12 @@ static int tas25xx_send_kbin_params(void)
 		int user_data = 1;
 		param_id = TAS_CALC_PARAM_IDX(TAS_DSP_SWAP_IDX, 1, CHANNEL0);
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&user_data, param_id,
-				TAS_SET_PARAM, sizeof(uint32_t), AFE_SMARTAMP_MODULE_RX);
+				TAS_SET_PARAM, sizeof(uint32_t), TISA_MOD_RX);
 
 		if (ch == CHANNEL1) {
 			param_id = TAS_CALC_PARAM_IDX(TAS_DSP_SWAP_IDX, 1, CHANNEL1);
 			ret = tas25xx_smartamp_algo_ctrl((u8 *)&user_data, param_id,
-					TAS_SET_PARAM, sizeof(uint32_t), AFE_SMARTAMP_MODULE_RX);
+					TAS_SET_PARAM, sizeof(uint32_t), TISA_MOD_RX);
 		}
 	}
 
@@ -280,7 +281,7 @@ static int tas25xx_set_Re_common(int re_value_in, int channel)
 
 	param_id = TAS_CALC_PARAM_IDX(TAS_SA_SET_RE, 1, channel);
 	ret = tas25xx_smartamp_algo_ctrl((u8 *)&re_value, param_id,
-			TAS_SET_PARAM, sizeof(uint32_t), AFE_SMARTAMP_MODULE_RX);
+			TAS_SET_PARAM, sizeof(uint32_t), TISA_MOD_RX);
 
 	return ret;
 }
@@ -360,7 +361,7 @@ static int tas25xx_calib_test_set_common(int calib_command, int channel)
 	if (param_id) {
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&data, param_id,
 				TAS_SET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0) {
 			s_calib_test_flag = 0;
 			pr_err("TI-SmartPA: %s: Failed to set calib/test, ret=%d\n",
@@ -402,7 +403,7 @@ static int tas25xx_get_re_common(int channel)
 		param_id = TAS_CALC_PARAM_IDX(TAS_SA_GET_RE, 1, channel);
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&re_value, param_id,
 				TAS_GET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0)
 			pr_err("TI-SmartPA: %s: Failed to get Re\n", __func__);
 		else
@@ -438,7 +439,7 @@ static int tas25xx_get_f0_common(int channel)
 		param_id = TAS_CALC_PARAM_IDX(TAS_SA_GET_F0, 1, channel);
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&f0_value, param_id,
 				TAS_GET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0)
 			pr_err("TI-SmartPA: %s: Failed to get F0\n", __func__);
 		else
@@ -475,7 +476,7 @@ static int tas25xx_get_q_common(int channel)
 		param_id = TAS_CALC_PARAM_IDX(TAS_SA_GET_Q, 1, channel);
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&q_value, param_id,
 				TAS_GET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0)
 			pr_err("TI-SmartPA: %s: Failed to get F0\n", __func__);
 		else
@@ -512,7 +513,7 @@ static int tas25xx_get_tv_common(int channel)
 		param_id = TAS_CALC_PARAM_IDX(TAS_SA_GET_TV, 1, channel);
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&tv_value, param_id,
 				TAS_GET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0)
 			pr_err("TI-SmartPA: %s: Failed to get Tv\n", __func__);
 		else
@@ -547,8 +548,6 @@ static const struct soc_enum tas25xx_smartamp_enable_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(tas25xx_smartamp_enable_text),
 			tas25xx_smartamp_enable_text),
 };
-
-
 
 static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 		struct snd_ctl_elem_value *pUcontrol)
@@ -585,20 +584,11 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 		return 0;
 	}
 
-	/*
-	pr_info("TI-SmartPA: %s: Setting the feedback module info for TAS\n",
-		__func__);
-	ret = afe_spk_prot_feed_back_cfg(TAS_TX_PORT, TAS_RX_PORT, 1, 0, 1);
-	if (ret)
-		pr_err("TI-SmartPA: %s: FB Path Info failed ignoring ret = 0x%x\n",
-			__func__, ret);
-	*/
-
 	pr_info("TI-SmartPA: %s: Sending TX Enable\n", __func__);
 	param_id = CAPI_V2_TAS_TX_ENABLE;
 	ret = tas25xx_smartamp_algo_ctrl((u8 *)&user_data, param_id,
 			TAS_SET_PARAM, sizeof(uint32_t),
-			AFE_SMARTAMP_MODULE_TX);
+			TISA_MOD_TX);
 	if (ret) {
 		pr_err("TI-SmartPA: %s: TX Enable Failed ret = 0x%x\n",
 				__func__, ret);
@@ -610,7 +600,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 	param_id = CAPI_V2_TAS_RX_ENABLE;
 	ret = tas25xx_smartamp_algo_ctrl((u8 *)&user_data, param_id,
 			TAS_SET_PARAM, sizeof(uint32_t),
-			AFE_SMARTAMP_MODULE_RX);
+			TISA_MOD_RX);
 	if (ret) {
 		pr_err("TI-SmartPA: %s: RX Enable Failed ret = 0x%x\n",
 				__func__, ret);
@@ -624,7 +614,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 	param_id = CAPI_V2_TAS_TX_CFG;
 	ret = tas25xx_smartamp_algo_ctrl((u8 *)&user_data, param_id,
 			TAS_SET_PARAM, sizeof(uint32_t),
-			AFE_SMARTAMP_MODULE_TX);
+			TISA_MOD_TX);
 	if (ret < 0) {
 		pr_err("TI-SmartPA: %s: Failed to set config\n", __func__);
 		goto fail_cmd;
@@ -635,11 +625,13 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 	param_id = CAPI_V2_TAS_RX_CFG;
 	ret = tas25xx_smartamp_algo_ctrl((u8 *)&user_data, param_id,
 			TAS_SET_PARAM, sizeof(uint32_t),
-			AFE_SMARTAMP_MODULE_RX);
+			TISA_MOD_RX);
 	if (ret < 0) {
 		pr_err("TI-SmartPA: %s: Failed to set config\n", __func__);
 		goto fail_cmd;
 	}
+
+	tas25xx_send_channel_mapping();
 
 	user_data = get_iv_vbat_format();
 	param_id = TAS_CALC_PARAM_IDX(TAS_SA_IV_VBAT_FMT, 1, CHANNEL0);
@@ -647,7 +639,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 			__func__, user_data);
 	ret = tas25xx_smartamp_algo_ctrl((u8 *)&user_data, param_id,
 			TAS_SET_PARAM, sizeof(uint32_t),
-			AFE_SMARTAMP_MODULE_RX);
+			TISA_MOD_RX);
 	if (ret < 0) {
 		pr_err("TI-SmartPA: %s: Failed to set config\n", __func__);
 		goto fail_cmd;
@@ -666,7 +658,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 	if (ret) {
 		pr_err("[Smartamp:%s] unable to get the calibration data = 0x%x\n",
 				__func__, ret);
-		/*TODO: Ignore the calibration read error*/
+		/* TODO: Ignore the calibration read error */
 		ret = 0;
 	} else {
 		int32_t t_cal;
@@ -686,7 +678,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 		param_id = TAS_CALC_PARAM_IDX(TAS_SA_SET_TCAL, 1, CHANNEL0);
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&t_cal,
 				param_id, TAS_SET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0) {
 			pr_err("[Smartamp:%s] Failed to set Tcal\n", __func__);
 			goto fail_cmd;
@@ -696,7 +688,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 		ret = tas25xx_smartamp_algo_ctrl(
 				(u8 *)(&(calibration_data[0])),
 				param_id, TAS_SET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0) {
 			pr_err("TI-SmartPA: %s: Failed to set Re\n", __func__);
 			goto fail_cmd;
@@ -705,7 +697,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 		if (number_of_ch == 2) {
 			param_id = TAS_CALC_PARAM_IDX(TAS_SA_SET_RE, 1, CHANNEL1);
 			ret = tas25xx_smartamp_algo_ctrl((u8 *)&(calibration_data[1]),
-					param_id, TAS_SET_PARAM, sizeof(uint32_t), AFE_SMARTAMP_MODULE_RX);
+					param_id, TAS_SET_PARAM, sizeof(uint32_t), TISA_MOD_RX);
 			if (ret < 0) {
 				pr_err("TI-SmartPA: %s: Failed to set Re\n",
 						__func__);
@@ -713,7 +705,7 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 			}
 		}
 	}
-#endif /*CONFIG_SET_RE_IN_KERNEL*/
+#endif /* CONFIG_SET_RE_IN_KERNEL */
 
 	tas25xx_algo_set_active();
 
@@ -826,7 +818,7 @@ static int tas25xx_set_t_calib(struct snd_kcontrol *pKcontrol,
 		param_id = TAS_CALC_PARAM_IDX(TAS_SA_SET_TCAL, 1, CHANNEL0);
 		ret = tas25xx_smartamp_algo_ctrl((u8 *)&calib_temp, param_id,
 				TAS_SET_PARAM, sizeof(uint32_t),
-				AFE_SMARTAMP_MODULE_RX);
+				TISA_MOD_RX);
 		if (ret < 0)
 			pr_err("TI-SmartPA: %s: Failed to set spk id\n",
 					__func__);
@@ -965,8 +957,11 @@ static const struct snd_kcontrol_new smartamp_tas25xx_mixer_controls[] = {
 			tas25xx_smartamp_bypass_get,
 			tas25xx_smartamp_bypass_set),
 };
-
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
+void tas_smartamp_add_codec_mixer_controls(struct snd_soc_component *codec)
+#else
 void tas_smartamp_add_codec_mixer_controls(struct snd_soc_codec *codec)
+#endif
 {
 	pr_err("TI-SmartPA: %s: Adding smartamp controls\n", __func__);
 
@@ -975,9 +970,15 @@ void tas_smartamp_add_codec_mixer_controls(struct snd_soc_codec *codec)
 	s_allow_dsp_query = 0;
 	s_calib_test_flag = 0;
 
-	snd_soc_add_codec_controls(codec, smartamp_tas25xx_mixer_controls,
-			ARRAY_SIZE(smartamp_tas25xx_mixer_controls));
+#if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
 
+	snd_soc_add_component_controls(codec, smartamp_tas25xx_mixer_controls,
+		ARRAY_SIZE(smartamp_tas25xx_mixer_controls));
+
+#else
+	snd_soc_add_codec_controls(codec, smartamp_tas25xx_mixer_controls,
+		ARRAY_SIZE(smartamp_tas25xx_mixer_controls));
+#endif
 	INIT_DELAYED_WORK(&query_tisa_algo_wrk, query_tisa_algo);
 
 }

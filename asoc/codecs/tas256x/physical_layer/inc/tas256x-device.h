@@ -24,7 +24,8 @@
 #define BOP_HLD_TM			0xF
 #define BST_VREG			0x10
 #define BST_ILIM			0x11
-#define CLASSH_TIMER		0x12
+#define CLASSH_TIMER			0x12
+#define AMPOUTPUT_LVL			0x13
 
 #define TX_SLOT0	0
 #define TX_SLOT1	1
@@ -75,6 +76,9 @@ int tas256x_iv_bitwidth_config(struct tas256x_priv *p_tas256x, int bitwidth, int
 int tas256x_tx_set_edge(struct tas256x_priv *p_tas256x,
 	unsigned int tx_edge, int ch);
 
+int tas256x_tx_set_start_slot(struct tas256x_priv *p_tas256x,
+	unsigned int tx_start_slot, int ch);
+
 int tas256x_set_tx_config(struct tas256x_priv *p_tas256x, int value, int ch);
 
 /* Rx Format Related functions */
@@ -87,8 +91,11 @@ int tas256x_rx_set_edge(struct tas256x_priv *p_tas256x,
 int tas256x_rx_set_start_slot(struct tas256x_priv *p_tas256x,
 	unsigned int rx_start_slot, int ch);
 
-int tas256x_rx_set_slot(struct tas256x_priv *p_tas256x,
+int tas256x_rx_set_slot_len(struct tas256x_priv *p_tas256x,
 	int slot_width, int ch);
+
+int tas256x_rx_set_slot(struct tas256x_priv *p_tas256x,
+	int slot, int ch);
 
 int tas256x_rx_set_bitwidth(struct tas256x_priv *p_tas256x,
 	int bitwidth, int ch);
@@ -187,6 +194,8 @@ int tas256x_set_auto_detect_clock(struct tas256x_priv *p_tas256x,
 			int value, int ch);
 int tas256x_enable_reciever_mode(struct tas256x_priv *p_tas256x, int enable,
 	int ch);
+int	tas256x_update_ampoutput_level(struct tas256x_priv *p_tas256x,
+	int value, int ch);
 
 /*Initialize to defaults*/
 int tas256x_update_default_params(struct tas256x_priv *p_tas256x, int ch);

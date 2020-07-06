@@ -1,7 +1,7 @@
 #ifndef __TAS256X_LOGIC_
 #define __TAS256X_LOGIC_
 
-#include "../tas256x/inc/tas256x.h"
+#include "physical_layer/inc/tas256x.h"
 
 #define TAS256X_STREAM_PLAYBACK 0
 #define TAS256X_STREAM_CAPTURE 1

@@ -31,6 +31,9 @@
 #include <linux/uaccess.h>
 #include <linux/miscdevice.h>
 #include "algo/inc/tas_smart_amp_v2.h"
+#include "tas25xx-algo-intf.h"
+
+#define TAS_PAYLOAD_SIZE 14
 
 /* Holds the Packet data required for processing */
 struct tas_dsp_pkt {
@@ -95,23 +98,8 @@ static int smartamp_params_ctrl(uint8_t *input, u8 dir, u8 count)
 			__func__, ppacket->slave_id);
 	}
 
-	/*
-	 * Note: In any case calculated paramid should not match with
-	 */
-	if ((paramid == CAPI_V2_TAS_RX_ENABLE) ||
-		(paramid == CAPI_V2_TAS_TX_ENABLE) ||
-		(paramid == CAPI_V2_TAS_RX_CFG) ||
-		(paramid == CAPI_V2_TAS_TX_CFG)) {
-		pr_err("TI-SmartPA: %s: %s Slave 0x%x params failed, paramid mismatch\n",
-				__func__,
-				dir == TAS_GET_PARAM ? "get" : "set",
-				ppacket->slave_id);
-		kfree(ppacket);
-		return -EINVAL;
-	}
-
 	ret = tas25xx_smartamp_algo_ctrl(ppacket->data, paramid,
-			dir, length * 4, AFE_SMARTAMP_MODULE_RX);
+		dir, length * 4, 0/*Default to Rx*/);
 	if (ret)
 		pr_err("TI-SmartPA: %s: %s Slave 0x%x params failed from afe, ret=%x\n",
 				__func__,
@@ -201,6 +189,8 @@ void tas_calib_exit(void)
 	misc_deregister(&tas_calib_misc);
 }
 
+/*
 MODULE_AUTHOR("Texas Instruments Inc.");
 MODULE_DESCRIPTION("tas2560 Misc driver");
 MODULE_LICENSE("GPL v2");
+*/

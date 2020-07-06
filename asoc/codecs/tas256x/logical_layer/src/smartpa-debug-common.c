@@ -14,7 +14,7 @@
 #include <linux/device.h>
 #include <linux/miscdevice.h>
 
-#include "smartpa-debug-common.h"
+#include "logical_layer/inc/smartpa-debug-common.h"
 
 #define AM_DEV_NAME   "smartpa"
 #define MSGS_SIZE 256
@@ -44,13 +44,11 @@ struct smartpa_prars {
 #define TFA_IOCTL_SPK_ADDR	_IOW(TFA_CTL_IOC_MAGIC, 0x07, unsigned char)
 #define TFA_IOCTL_SPK_MTP_BACKUP	_IOR(TFA_CTL_IOC_MAGIC, 0x08, int)
 
-/*extern int smartpa_reset_mtp_dbg(void);*/
 extern int smartpa_check_calib_dbg(void);
 extern int smartpa_init_dbg(char *buffer, int size);
 extern int smartpa_read_freq_dbg(char *buffer, int size);
 extern void smartpa_read_prars_dbg(int temp[5], unsigned char addr);
 extern void smartpa_get_client(struct i2c_client **client, unsigned char addr);
-/*extern int smartpa_debug_mtp_backup(int force);*/
 
 static struct i2c_client *smartpa_debug_client;
 static unsigned char last_addr;
@@ -106,7 +104,6 @@ static long smartpa_debug_ioctl(struct file *file,
 	/* Reset MTP */
 	case TFA_IOCTL_SPK_REST:
 		printk("smartpa_ioctl SPK_REST\n");
-		/* max989xx_reset_mtp_dbg();*/
 		break;
 	/* calibrate */
 	case TFA_IOCTL_SPK_INTS:
@@ -152,9 +149,7 @@ static long smartpa_debug_ioctl(struct file *file,
 		printk("smartpa_ioctl addr %x\n", last_addr);
 		break;
 	case TFA_IOCTL_SPK_MTP_BACKUP:
-	/*	check = max989xx_debug_mtp_backup(0); */
 		pr_info("%s mtp backup %d.\n", __func__, check);
-	/*	ret = copy_to_user((__user int*)arg, &check, sizeof(int)); */
 	default:
 		printk("smartpa Fail IOCTL command no such ioctl cmd = %x\n",
 			cmd);

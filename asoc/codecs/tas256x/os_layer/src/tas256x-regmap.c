@@ -15,7 +15,7 @@
  *
  */
 
-#ifdef CONFIG_TAS256X_REGMAP
+#if IS_ENABLED(CONFIG_TAS256X_REGMAP)
 #define DEBUG 5
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -37,15 +37,20 @@
 #include <linux/irq.h>
 #include <linux/pm.h>
 #include <linux/version.h>
-#include "tas256x/inc/tas256x.h"
-#include "src/tas256x-logic.h"
-#include "tas256x/inc/tas256x-device.h"
-#include "codec/inc/tas256x-codec.h"
-#include "codec/inc/tas256x-regmap.h"
+#include "physical_layer/inc/tas256x.h"
+#include "logical_layer/inc/tas256x-logic.h"
+#include "physical_layer/inc/tas256x-device.h"
+#include "os_layer/inc/tas256x-codec.h"
+#include "os_layer/inc/tas256x-regmap.h"
+#include "misc/tas256x-misc.h"
 
-#ifdef CONFIG_TAS25XX_ALGO
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
 #include "algo/inc/tas_smart_amp_v2.h"
+
+#if IS_ENABLED(CONFIG_PLATFORM_QCOM)
+#include <dsp/tas_qualcomm.h>
 static dc_detection_data_t s_dc_detect;
+#endif /*CONFIG_PLATFORM_QCOM*/
 #endif /*CONFIG_TAS25XX_ALGO*/
 /*For mixer_control implementation*/
 #define MAX_STRING	200
@@ -394,6 +399,10 @@ static int tas256x_put(struct snd_kcontrol *kcontrol,
 		ret = tas256x_update_classh_timer(p_tas256x,
 			ucontrol->value.integer.value[0], mc->shift);
 	break;
+	case AMPOUTPUT_LVL:
+		ret = tas256x_update_ampoutput_level(p_tas256x,
+			ucontrol->value.integer.value[0], mc->shift);
+	break;
 	}
 	return ret;
 }
@@ -500,6 +509,10 @@ static int tas256x_get(struct snd_kcontrol *kcontrol,
 	case CLASSH_TIMER:
 		ucontrol->value.integer.value[0] =
 			p_tas256x->devs[mc->shift-1]->classh_timer;
+	break;
+	case AMPOUTPUT_LVL:
+		ucontrol->value.integer.value[0] =
+			p_tas256x->devs[mc->shift-1]->ampoutput_lvl;
 	break;
 	}
 	return 0;
@@ -774,17 +787,17 @@ static const struct snd_kcontrol_new tas256x_right_controls[] = {
 	SOC_SINGLE_EXT("TAS256X LIM MAX ATTN RIGHT", LIM_MAX_ATN, 2, 15, 0,
 		tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X LIM THR MAX RIGHT", LIMB_TH_MAX,
-		1, 26, 0, tas256x_get, tas256x_put),
+		2, 26, 0, tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X LIM THR MIN RIGHT", LIMB_TH_MIN,
-		1, 26, 0, tas256x_get, tas256x_put),
+		2, 26, 0, tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X LIM INFLECTION POINT RIGHT", LIMB_INF_PT,
 		2, 40, 0, tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X LIM SLOPE RIGHT", LIMB_SLOPE, 2, 6, 0,
 		tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X BOP THR RIGHT", BOP_TH,
-		1, 15, 0, tas256x_get, tas256x_put),
+		2, 15, 0, tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X BOSD THR RIGHT", BOSD_TH,
-		1, 15, 0, tas256x_get, tas256x_put),
+		2, 15, 0, tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X LIM ATTACT RATE RIGHT", LIMB_ATK_RT, 2, 7, 0,
 		tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X LIM RELEASE RATE RIGHT", LIMB_RLS_RT, 2, 7, 0,
@@ -836,6 +849,8 @@ static const struct snd_kcontrol_new tas2564_left_controls[] = {
 		tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X BOOST CURRENT LEFT", BST_ILIM, 1, 63, 0,
 		tas256x_get, tas256x_put),
+	SOC_SINGLE_EXT("TAS256X AMP OUTPUT LVL LEFT", AMPOUTPUT_LVL, 1, 0x1C, 0,
+		tas256x_get, tas256x_put),
 };
 
 static const struct snd_kcontrol_new tas2564_right_controls[] = {
@@ -847,6 +862,8 @@ static const struct snd_kcontrol_new tas2564_right_controls[] = {
 		tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X BOOST CURRENT RIGHT", BST_ILIM, 2, 63, 0,
 		tas256x_get, tas256x_put),
+	SOC_SINGLE_EXT("TAS256X AMP OUTPUT LVL RIGHT", AMPOUTPUT_LVL, 2, 0x1C, 0,
+		tas256x_get, tas256x_put),
 };
 
 static const struct snd_kcontrol_new tas2562_left_controls[] = {
@@ -856,6 +873,8 @@ static const struct snd_kcontrol_new tas2562_left_controls[] = {
 		tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X BOOST CURRENT LEFT", BST_ILIM, 1, 55, 0,
 		tas256x_get, tas256x_put),
+	SOC_SINGLE_EXT("TAS256X AMP OUTPUT LVL LEFT", AMPOUTPUT_LVL, 1, 0x1C, 0,
+		tas256x_get, tas256x_put),
 };
 
 static const struct snd_kcontrol_new tas2562_right_controls[] = {
@@ -864,6 +883,8 @@ static const struct snd_kcontrol_new tas2562_right_controls[] = {
 	SOC_SINGLE_EXT("TAS256X BOOST VOLTAGE RIGHT", BST_VREG, 2, 12, 0,
 		tas256x_get, tas256x_put),
 	SOC_SINGLE_EXT("TAS256X BOOST CURRENT RIGHT", BST_ILIM, 2, 55, 0,
+		tas256x_get, tas256x_put),
+	SOC_SINGLE_EXT("TAS256X AMP OUTPUT LVL RIGHT", AMPOUTPUT_LVL, 2, 0x1C, 0,
 		tas256x_get, tas256x_put),
 };
 
@@ -1092,7 +1113,7 @@ static void irq_work_routine(struct work_struct *work)
 
 	plat_data = (struct linux_platform *) p_tas256x->platform_data;
 	dev_info(plat_data->dev, "%s\n", __func__);
-#ifdef CONFIG_TAS256X_CODEC
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	mutex_lock(&p_tas256x->codec_lock);
 #endif
 	if (plat_data->mb_runtime_suspend) {
@@ -1102,10 +1123,10 @@ static void irq_work_routine(struct work_struct *work)
 	/*Logical Layer IRQ function, return is ignored*/
 	tas256x_irq_work_func(p_tas256x);
 
-#ifdef CONFIG_TAS256X_CODEC
+end:
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	mutex_unlock(&p_tas256x->codec_lock);
 #endif
-end:
 	return;
 }
 
@@ -1116,13 +1137,13 @@ static void init_work_routine(struct work_struct *work)
 	struct linux_platform *plat_data = NULL;
 
 	plat_data = (struct linux_platform *) p_tas256x->platform_data;
-#ifdef CONFIG_TAS256X_CODEC
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	mutex_lock(&p_tas256x->codec_lock);
 #endif
 	/*Init Work Function. return is ignored*/
 	tas256x_init_work_func(p_tas256x);
 
-#ifdef CONFIG_TAS256X_CODEC
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	mutex_unlock(&p_tas256x->codec_lock);
 #endif
 }
@@ -1199,7 +1220,8 @@ static int tas256x_pm_resume(struct device *dev)
 	return 0;
 }
 
-#ifdef CONFIG_TAS25XX_ALGO
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
+#if IS_ENABLED(CONFIG_PLATFORM_QCOM)
 struct tas256x_priv *g_p_tas256x;
 
 void tas256x_software_reset(void *prv_data)
@@ -1215,16 +1237,17 @@ static void dc_work_routine(struct work_struct *work)
 	struct linux_platform *plat_data = NULL;
 
 	plat_data = (struct linux_platform *) p_tas256x->platform_data;
-#ifdef CONFIG_TAS256X_CODEC
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	mutex_lock(&p_tas256x->codec_lock);
 #endif
 	tas256x_dc_work_func(p_tas256x, s_dc_detect.channel);
 
-#ifdef CONFIG_TAS256X_CODEC
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	mutex_unlock(&p_tas256x->codec_lock);
 #endif
 
 }
+#endif/*CONFIG_PLATFORM_QCOM*/
 #endif /*CONFIG_TAS25XX_ALGO*/
 
 void schedule_init_work(struct tas256x_priv *p_tas256x)
@@ -1310,6 +1333,61 @@ static int tas256x_parse_dt(struct device *dev,
 	if (rc)
 		goto EXIT;
 
+	rc = of_property_read_u32(np, "ti,frame-start", &p_tas256x->mn_frame_start);
+	if (rc) {
+		dev_info(plat_data->dev,
+			"Looking up %s property in node %s failed %d\n",
+			"ti,frame-start", np->full_name, rc);
+		p_tas256x->mn_frame_start = 0;
+	} else {
+		dev_dbg(plat_data->dev, "ti,frame-start=0x%x",
+			p_tas256x->mn_frame_start);
+	}
+
+	rc = of_property_read_u32(np, "ti,rx-offset", &p_tas256x->mn_rx_offset);
+	if (rc) {
+		dev_info(plat_data->dev,
+			"Looking up %s property in node %s failed %d\n",
+			"ti,rx-offset", np->full_name, rc);
+		p_tas256x->mn_rx_offset = 1;
+	} else {
+		dev_dbg(plat_data->dev, "ti,rx-offset=0x%x",
+			p_tas256x->mn_rx_offset);
+	}
+
+	rc = of_property_read_u32(np, "ti,rx-edge", &p_tas256x->mn_rx_edge);
+	if (rc) {
+		dev_info(plat_data->dev,
+			"Looking up %s property in node %s failed %d\n",
+			"ti,rx-edge", np->full_name, rc);
+		p_tas256x->mn_rx_edge = 1;
+	} else {
+		dev_dbg(plat_data->dev, "ti,rx-edge=0x%x",
+			p_tas256x->mn_rx_edge);
+	}
+
+	rc = of_property_read_u32(np, "ti,tx-offset", &p_tas256x->mn_tx_offset);
+	if (rc) {
+		dev_info(plat_data->dev,
+			"Looking up %s property in node %s failed %d\n",
+			"ti,tx-offset", np->full_name, rc);
+		p_tas256x->mn_tx_offset = 0;
+	} else {
+		dev_dbg(plat_data->dev, "ti,tx-offset=0x%x",
+			p_tas256x->mn_tx_offset);
+	}
+
+	rc = of_property_read_u32(np, "ti,tx-edge", &p_tas256x->mn_tx_edge);
+	if (rc) {
+		dev_info(plat_data->dev,
+			"Looking up %s property in node %s failed %d\n",
+			"ti,tx-edge", np->full_name, rc);
+		p_tas256x->mn_tx_edge = 0;
+	} else {
+		dev_dbg(plat_data->dev, "ti,tx-edge=0x%x",
+			p_tas256x->mn_tx_edge);
+	}
+
 	rc = of_property_read_u32(np, "ti,iv-width", &p_tas256x->mn_iv_width);
 	if (rc) {
 		dev_err(plat_data->dev,
@@ -1329,9 +1407,9 @@ static int tas256x_parse_dt(struct device *dev,
 		dev_dbg(plat_data->dev, "ti,vbat-mon=0x%x",
 			p_tas256x->mn_vbat);
 	}
-#ifdef CONFIG_TAS25XX_ALGO
-	/*TODO: Enable if feature is needed*/
-	/*tas25xx_parse_algo_dt(np);*/
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
+	/* Needs to be enabled always */
+	tas25xx_parse_algo_dt(np);
 #endif /*CONFIG_TAS25XX_ALGO*/
 EXIT:
 	return rc;
@@ -1365,7 +1443,9 @@ static int tas256x_i2c_probe(struct i2c_client *p_client,
 	}
 
 	p_tas256x->platform_data = plat_data;
-
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+	p_tas256x->profile_cfg_id = -1;
+#endif
 	p_tas256x->plat_write = tas256x_regmap_write;
 	p_tas256x->plat_read = tas256x_regmap_read;
 	p_tas256x->plat_bulk_write = tas256x_regmap_bulk_write;
@@ -1390,7 +1470,7 @@ static int tas256x_i2c_probe(struct i2c_client *p_client,
 	p_tas256x->hw_reset = tas256x_hw_reset;
 	p_tas256x->enable_irq = tas256x_enable_irq;
 	p_tas256x->schedule_init_work = schedule_init_work;
-#ifdef CODEC_PM
+#if IS_ENABLED(CODEC_PM)
 	plat_data->runtime_suspend = tas256x_runtime_suspend;
 	plat_data->runtime_resume = tas256x_runtime_resume;
 	plat_data->mn_power_state = TAS256X_POWER_SHUTDOWN;
@@ -1451,7 +1531,7 @@ static int tas256x_i2c_probe(struct i2c_client *p_client,
 			}
 			gpio_direction_input(p_tas256x->devs[i]->mn_irq_gpio);
 			/*tas256x_dev_write(p_tas256x,
-			 *	(i == 0)? channel_left : channel_right,
+			 *	(i == 0) ? channel_left : channel_right,
 			 *	TAS256X_MISCCONFIGURATIONREG0, 0xce);
 			 */
 
@@ -1478,7 +1558,7 @@ static int tas256x_i2c_probe(struct i2c_client *p_client,
 	tas256x_enable_irq(p_tas256x, true);
 	INIT_DELAYED_WORK(&p_tas256x->init_work, init_work_routine);
 
-#ifdef CONFIG_TAS256X_CODEC
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	mutex_init(&p_tas256x->codec_lock);
 	n_result = tas256x_register_codec(p_tas256x);
 	if (n_result < 0) {
@@ -1488,7 +1568,7 @@ static int tas256x_i2c_probe(struct i2c_client *p_client,
 	}
 #endif
 
-#ifdef CONFIG_TAS256X_MISC
+#if IS_ENABLED(CONFIG_TAS256X_MISC)
 	mutex_init(&p_tas256x->file_lock);
 	n_result = tas256x_register_misc(p_tas256x);
 	if (n_result < 0) {
@@ -1499,10 +1579,12 @@ static int tas256x_i2c_probe(struct i2c_client *p_client,
 #endif
 
 
-#ifdef CONFIG_TAS25XX_ALGO
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
+#if IS_ENABLED(CONFIG_PLATFORM_QCOM)
 	INIT_DELAYED_WORK(&p_tas256x->dc_work, dc_work_routine);
 	g_p_tas256x = p_tas256x;
 	register_tas256x_reset_func(tas256x_software_reset, &s_dc_detect);
+#endif /*CONFIG_PLATFORM_QCOM*/
 #endif /*CONFIG_TAS25XX_ALGO*/
 
 
@@ -1524,12 +1606,12 @@ static int tas256x_i2c_remove(struct i2c_client *p_client)
 	cancel_delayed_work_sync(&p_tas256x->init_work);
 	cancel_delayed_work_sync(&p_tas256x->dc_work);
 
-#ifdef CONFIG_TAS256X_CODEC
+#if IS_ENABLED(CONFIG_TAS256X_CODEC)
 	tas256x_deregister_codec(p_tas256x);
 	mutex_destroy(&p_tas256x->codec_lock);
 #endif
 
-#ifdef CONFIG_TAS256X_MISC
+#if IS_ENABLED(CONFIG_TAS256X_MISC)
 	tas256x_deregister_misc(p_tas256x);
 	mutex_destroy(&p_tas256x->file_lock);
 #endif

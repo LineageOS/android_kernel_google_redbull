@@ -1,3 +1,23 @@
+/*
+** =============================================================================
+** Copyright (c) 2016  Texas Instruments Inc.
+**
+** This program is free software; you can redistribute it and/or modify it under
+** the terms of the GNU General Public License as published by the Free Software
+** Foundation; version 2.
+**
+** This program is distributed in the hope that it will be useful, but WITHOUT
+** ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+** FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+**
+** File:
+**     tas25xx-algo-bin-utils.c
+**
+** Description:
+**     Algorithm parameter's binary file utility wrapper.
+**
+** =============================================================================
+*/
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/firmware.h>
@@ -25,7 +45,6 @@ static struct bin_file_data_t s_bin = {
 };
 
 static struct device *s_dev;
-
 
 void bin_file_set_device(struct device *dev)
 {
@@ -56,7 +75,6 @@ int bin_file_parse_init(void)
 	int32_t time;
 	char *ddc;
 	char ddcl[64] = { 0 };
-
 
 	s_bin.uses_bin_file = 1;
 
@@ -95,7 +113,6 @@ int bin_file_parse_init(void)
 		printk(KERN_INFO "TI-SmartPA BIN: DDC Name = %s\n", ddcl);
 		printk(KERN_INFO "TI-SmartPA BIN: metadata read !!\n");
 
-
 		memcpy(header, (char *)(fw_entry->data) + SA_BIN_MDATA_SZ, SA_BIN_HDR_SIZE);
 		s_bin.number_of_profiles = header_ptr[0];
 		s_bin.no_of_channels = (header_ptr[1] >> 24) & 0xFF;
@@ -108,13 +125,20 @@ int bin_file_parse_init(void)
 				s_bin.single_profile_size);
 
 		bin_data_size = s_bin.number_of_profiles * s_bin.single_profile_size;
-		s_bin.profile_data = kmalloc(bin_data_size, GFP_KERNEL);
+		if (bin_data_size == (fw_entry->size - SA_BIN_MDATA_SZ - SA_BIN_HDR_SIZE)) {
+			s_bin.profile_data = kmalloc(bin_data_size, GFP_KERNEL);
+		} else {
+			printk(KERN_ERR "TI-SmartPA BIN : size mismatch bin vs firmware\n");
+			s_bin.profile_data = NULL;
+		}
+
 		if (!s_bin.profile_data) {
 			printk(KERN_ERR "TI-SmartPA BIN : kmalloc failed\n");
 			bin_file_parse_deinit();
 			ret = -ENOMEM;
 		} else {
-			memcpy (s_bin.profile_data, fw_entry->data + SA_BIN_MDATA_SZ + SA_BIN_HDR_SIZE, bin_data_size);
+			char *data_start = ((char *)(fw_entry->data)) + SA_BIN_MDATA_SZ + SA_BIN_HDR_SIZE;
+			memcpy (s_bin.profile_data, data_start, bin_data_size);
 			s_bin.parse_done = 1;
 			printk(KERN_INFO "TI-SmartPA BIN: [BIN]: Read %d bytes successfully !!!\n", bin_data_size);
 		}
@@ -242,7 +266,6 @@ int32_t *bin_file_get_profile_0_data_pointer(void)
  * custom value start - size
  * custom value 1
  * custom value 2
- * ..
  */
 int32_t bin_file_get_custom_value_by_idx(int index_request, int *value)
 {
@@ -253,7 +276,7 @@ int32_t bin_file_get_custom_value_by_idx(int index_request, int *value)
 	if (data && value) {
 		custom_index_start = data[CUSTOM_VALUE_INDEX_PTR];
 		if (custom_index_start && (index_request < data[custom_index_start])) {
-			custom_index_start += 1; /*points to data - index 0*/
+			custom_index_start += 1; /* points to data - index 0 */
 			*value = data[custom_index_start + index_request];
 			ret = 0;
 		}

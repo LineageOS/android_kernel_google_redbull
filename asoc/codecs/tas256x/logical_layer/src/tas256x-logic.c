@@ -1,9 +1,9 @@
-#include "tas256x-logic.h"
-#include "tas256x/inc/tas256x-device.h"
-#ifdef CONFIG_TAS25XX_ALGO
+#include "logical_layer/inc/tas256x-logic.h"
+#include "physical_layer/inc/tas256x-device.h"
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
 #include "algo/inc/tas_smart_amp_v2.h"
 #include "algo/inc/tas25xx-calib.h"
-#include "codec/inc/tas256x-regmap.h"
+#include "os_layer/inc/tas256x-regmap.h"
 #endif /*CONFIG_TAS25XX_ALGO*/
 
 static int tas256x_change_book_page(struct tas256x_priv *p_tas256x,
@@ -83,9 +83,9 @@ static int tas256x_dev_read(struct tas256x_priv *p_tas256x,
 	if (chn == channel_both) {
 		for (i = 0; i < p_tas256x->mn_channels; i++) {
 			if (p_tas256x->devs[i]->spk_control == 1)
-				chnTemp |= 1<<i;
+				chnTemp |= 1 << i;
 		}
-		chn = (chnTemp == 0)?chn:(enum channel)chnTemp;
+		chn = (chnTemp == 0) ? chn : (enum channel)chnTemp;
 	}
 
 	n_result = tas256x_change_book_page(p_tas256x, chn,
@@ -98,7 +98,7 @@ static int tas256x_dev_read(struct tas256x_priv *p_tas256x,
 		chn = channel_left;
 
 	n_result = p_tas256x->plat_read(p_tas256x->platform_data,
-			p_tas256x->devs[chn>>1]->mn_addr,
+			p_tas256x->devs[chn >> 1]->mn_addr,
 			TAS256X_PAGE_REG(reg), pValue);
 	if (n_result < 0) {
 		pr_err("%s, ERROR, L=%d, E=%d\n",
@@ -111,7 +111,7 @@ static int tas256x_dev_read(struct tas256x_priv *p_tas256x,
 		pr_err(
 			"%s: chn:%x:BOOK:PAGE:REG 0x%02x:0x%02x:0x%02x,0x%02x\n",
 			__func__,
-			p_tas256x->devs[chn>>1]->mn_addr, TAS256X_BOOK_ID(reg),
+			p_tas256x->devs[chn >> 1]->mn_addr, TAS256X_BOOK_ID(reg),
 			TAS256X_PAGE_ID(reg),
 			TAS256X_PAGE_REG(reg), *pValue);
 		if (chn&channel_left)
@@ -135,9 +135,9 @@ static int tas256x_dev_write(struct tas256x_priv *p_tas256x, enum channel chn,
 	if (chn == channel_both) {
 		for (i = 0; i < p_tas256x->mn_channels; i++) {
 			if (p_tas256x->devs[i]->spk_control == 1)
-				chnTemp |= 1<<i;
+				chnTemp |= 1 << i;
 		}
-		chn = (chnTemp == 0)?chn:(enum channel)chnTemp;
+		chn = (chnTemp == 0) ? chn : (enum channel)chnTemp;
 	}
 
 	n_result = tas256x_change_book_page(p_tas256x, chn,
@@ -193,9 +193,9 @@ static int tas256x_dev_bulk_write(struct tas256x_priv *p_tas256x,
 	if (chn == channel_both) {
 		for (i = 0; i < p_tas256x->mn_channels; i++) {
 			if (p_tas256x->devs[i]->spk_control == 1)
-				chnTemp |= 1<<i;
+				chnTemp |= 1 << i;
 		}
-		chn = (chnTemp == 0)?chn:(enum channel)chnTemp;
+		chn = (chnTemp == 0) ? chn : (enum channel)chnTemp;
 	}
 
 	n_result = tas256x_change_book_page(p_tas256x, chn,
@@ -251,9 +251,9 @@ static int tas256x_dev_bulk_read(struct tas256x_priv *p_tas256x,
 	if (chn == channel_both) {
 		for (i = 0; i < p_tas256x->mn_channels; i++) {
 			if (p_tas256x->devs[i]->spk_control == 1)
-				chnTemp |= 1<<i;
+				chnTemp |= 1 << i;
 		}
-		chn = (chnTemp == 0)?chn:(enum channel)chnTemp;
+		chn = (chnTemp == 0) ? chn : (enum channel)chnTemp;
 	}
 
 	n_result = tas256x_change_book_page(p_tas256x, chn,
@@ -262,7 +262,7 @@ static int tas256x_dev_bulk_read(struct tas256x_priv *p_tas256x,
 		goto end;
 
 	n_result = p_tas256x->plat_bulk_read(p_tas256x->platform_data,
-		p_tas256x->devs[chn>>1]->mn_addr, TAS256X_PAGE_REG(reg),
+		p_tas256x->devs[chn >> 1]->mn_addr, TAS256X_PAGE_REG(reg),
 		p_data, n_length);
 	if (n_result < 0) {
 		pr_err("%s, ERROR, L=%d, E=%d\n",
@@ -274,7 +274,7 @@ static int tas256x_dev_bulk_read(struct tas256x_priv *p_tas256x,
 	} else {
 		pr_err(
 			"%s: chn%x:BOOK:PAGE:REG %u:%u:%u, len: 0x%02x\n",
-			__func__, p_tas256x->devs[chn>>1]->mn_addr,
+			__func__, p_tas256x->devs[chn >> 1]->mn_addr,
 			TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg),
 			TAS256X_PAGE_REG(reg), n_length);
 		if (chn&channel_left)
@@ -299,9 +299,9 @@ static int tas256x_dev_update_bits(struct tas256x_priv *p_tas256x,
 	if (chn == channel_both) {
 		for (i = 0; i < p_tas256x->mn_channels; i++) {
 			if (p_tas256x->devs[i]->spk_control == 1)
-				chnTemp |= 1<<i;
+				chnTemp |= 1 << i;
 		}
-		chn = (chnTemp == 0)?chn:(enum channel)chnTemp;
+		chn = (chnTemp == 0) ? chn : (enum channel)chnTemp;
 	}
 
 	n_result = tas256x_change_book_page(p_tas256x, chn,
@@ -392,6 +392,29 @@ void tas256x_failsafe(struct tas256x_priv  *p_tas256x)
 	/*pTAS256x->write(pTAS256x, channel_both, TAS256X_SPK_CTRL_REG, 0x04);*/
 }
 
+int tas256x_load_i2s_tdm_interface_settings(struct tas256x_priv *p_tas256x, int ch)
+{
+	int n_result = 0;
+
+	/*Frame_Start Settings*/
+	n_result |= tas256x_rx_set_frame_start(p_tas256x,
+		p_tas256x->mn_frame_start, ch);
+	/*RX Edge Settings*/
+	n_result |= tas256x_rx_set_edge(p_tas256x,
+		p_tas256x->mn_rx_edge, ch);
+	/*RX Offset Settings*/
+	n_result |= tas256x_rx_set_start_slot(p_tas256x,
+		p_tas256x->mn_rx_offset, ch);
+	/*TX Edge Settings*/
+	n_result |= tas256x_tx_set_edge(p_tas256x,
+		p_tas256x->mn_tx_edge, ch);
+	/*TX Offset Settings*/
+	n_result |= tas256x_tx_set_start_slot(p_tas256x,
+		p_tas256x->mn_tx_offset, ch);
+
+	return n_result;
+}
+
 int tas256x_load_init(struct tas256x_priv *p_tas256x)
 {
 	int ret = 0, i;
@@ -409,6 +432,9 @@ int tas256x_load_init(struct tas256x_priv *p_tas256x)
 	ret |= tas256x_set_tx_config(p_tas256x, 0/*Ignored*/, channel_both);
 	if (ret < 0)
 		goto end;
+	ret |= tas256x_load_i2s_tdm_interface_settings(p_tas256x, channel_both);
+	if (ret < 0)
+		goto end;
 	ret |= tas256x_set_clock_config(p_tas256x, 0/*Ignored*/, channel_both);
 	if (ret < 0)
 		goto end;
@@ -417,7 +443,7 @@ int tas256x_load_init(struct tas256x_priv *p_tas256x)
 	ret |= tas256x_icn_config(p_tas256x, 0/*Ignored*/, channel_both);
 	if (ret < 0)
 		goto end;
-#ifdef HPF_BYPASS
+#if IS_ENABLED(HPF_BYPASS)
 	/*Disable the HPF in Forward Path*/
 	ret |= tas256x_HPF_FF_Bypass(p_tas256x, 0/*Ignored*/, channel_both);
 	if (ret < 0)
@@ -438,6 +464,112 @@ end:
 	return ret;
 }
 
+int tas256x_load_ctrl_values(struct tas256x_priv *p_tas256x, int ch)
+{
+	int n_result = 0;
+
+	n_result |= tas256x_update_playback_volume(p_tas256x,
+			p_tas256x->devs[ch-1]->dvc_pcm, ch);
+
+	n_result |= tas256x_update_lim_max_attenuation(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_max_attn, ch);
+
+	n_result |= tas256x_update_lim_max_thr(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_thr_max, ch);
+
+	n_result |= tas256x_update_lim_min_thr(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_thr_min, ch);
+
+	n_result |= tas256x_update_lim_inflection_point(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_infl_pt, ch);
+
+	n_result |= tas256x_update_lim_slope(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_trk_slp, ch);
+
+	n_result |= tas256x_update_bop_thr(p_tas256x,
+			p_tas256x->devs[ch-1]->bop_thd, ch);
+
+	n_result |= tas256x_update_bosd_thr(p_tas256x,
+			p_tas256x->devs[ch-1]->bosd_thd, ch);
+
+	n_result |= tas256x_update_boost_voltage(p_tas256x,
+			p_tas256x->devs[ch-1]->bst_vltg, ch);
+
+	n_result |= tas256x_update_current_limit(p_tas256x,
+			p_tas256x->devs[ch-1]->bst_ilm, ch);
+
+	n_result |= tas256x_update_ampoutput_level(p_tas256x,
+			p_tas256x->devs[ch-1]->ampoutput_lvl, ch);
+
+	n_result |= tas256x_update_limiter_enable(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_switch, ch);
+
+	n_result |= tas256x_update_limiter_attack_rate(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_att_rate, ch);
+
+	n_result |= tas256x_update_limiter_attack_step_size(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_att_stp_size, ch);
+
+	n_result |= tas256x_update_limiter_release_rate(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_rel_rate, ch);
+
+	n_result |= tas256x_update_limiter_release_step_size(p_tas256x,
+			p_tas256x->devs[ch-1]->lim_rel_stp_size, ch);
+
+	n_result |= tas256x_update_bop_enable(p_tas256x,
+			p_tas256x->devs[ch-1]->bop_enable, ch);
+
+	n_result |= tas256x_update_bop_mute(p_tas256x,
+			p_tas256x->devs[ch-1]->bop_mute, ch);
+
+	n_result |= tas256x_update_bop_shutdown_enable(p_tas256x,
+			p_tas256x->devs[ch-1]->bosd_enable, ch);
+
+	n_result |= tas256x_update_bop_attack_rate(p_tas256x,
+			p_tas256x->devs[ch-1]->bop_att_rate, ch);
+
+	n_result |= tas256x_update_bop_attack_step_size(p_tas256x,
+			p_tas256x->devs[ch-1]->bop_att_stp_size, ch);
+
+	n_result |= tas256x_update_bop_hold_time(p_tas256x,
+			p_tas256x->devs[ch-1]->bop_hld_time, ch);
+
+	n_result |= tas256x_update_vbat_lpf(p_tas256x,
+			p_tas256x->devs[ch-1]->vbat_lpf, ch);
+
+	n_result |= tas256x_update_rx_cfg(p_tas256x,
+			p_tas256x->devs[ch-1]->rx_cfg, ch);
+
+	n_result |= tas256x_update_classh_timer(p_tas256x,
+			p_tas256x->devs[ch-1]->classh_timer, ch);
+
+	n_result |= tas256x_enable_reciever_mode(p_tas256x,
+			p_tas256x->devs[ch-1]->reciever_enable, ch);
+
+	n_result |= tas256x_icn_disable(p_tas256x,
+		p_tas256x->icn_sw, ch);
+
+	n_result |= tas256x_rx_set_slot(p_tas256x,
+		p_tas256x->mn_rx_slot_map[ch-1], ch);
+
+	return n_result;
+}
+
+void tas256x_irq_reload(struct tas256x_priv *p_tas256x)
+{
+	int ret = 0;
+
+	pr_err("%s:\n", __func__);
+	ret |= tas256x_set_power_state(p_tas256x, p_tas256x->mn_power_state);
+	/* power up failed, restart later */
+	if (ret < 0) {
+		if (p_tas256x->mn_err_code &
+			(ERROR_DEVA_I2C_COMM | ERROR_DEVB_I2C_COMM))
+			tas256x_failsafe(p_tas256x);
+	}
+
+}
+
 void tas256x_load_config(struct tas256x_priv *p_tas256x)
 {
 	int ret = 0;
@@ -449,9 +581,14 @@ void tas256x_load_config(struct tas256x_priv *p_tas256x)
 	ret |= tas56x_software_reset(p_tas256x, channel_both);
 	if (ret < 0)
 		goto end;
-	tas256x_update_default_params(p_tas256x, channel_left);
-	if (p_tas256x->mn_channels == 2)
-		tas256x_update_default_params(p_tas256x, channel_right);
+	ret |= tas256x_load_ctrl_values(p_tas256x, channel_left);
+	if (ret < 0)
+		goto end;
+	if (p_tas256x->mn_channels == 2) {
+		ret |= tas256x_load_ctrl_values(p_tas256x, channel_right);
+		if (ret < 0)
+			goto end;
+	}
 	ret |= tas256x_load_init(p_tas256x);
 	if (ret < 0)
 		goto end;
@@ -489,14 +626,6 @@ void tas256x_load_config(struct tas256x_priv *p_tas256x)
 			goto end;
 	}
 
-	ret = tas256x_rx_set_edge(p_tas256x, p_tas256x->mn_rx_edge,
-		channel_both);
-	if (ret < 0)
-		goto end;
-	ret = tas256x_rx_set_start_slot(p_tas256x,
-		p_tas256x->mn_rx_start_slot, channel_both);
-	if (ret < 0)
-		goto end;
 	ret |= tas256x_set_samplerate(p_tas256x, p_tas256x->mn_sampling_rate,
 		channel_both);
 	if (ret < 0)
@@ -528,6 +657,14 @@ void tas256x_reload(struct tas256x_priv *p_tas256x, int chn)
 	ret |= tas256x_load_init(p_tas256x);
 	if (ret < 0)
 		goto end;
+	ret |= tas256x_load_ctrl_values(p_tas256x, channel_left);
+	if (ret < 0)
+		goto end;
+	if (p_tas256x->mn_channels == 2) {
+		ret |= tas256x_load_ctrl_values(p_tas256x, channel_right);
+		if (ret < 0)
+			goto end;
+	}
 	ret |= tas256x_iv_sense_enable_set(p_tas256x, 1,
 		channel_both);
 	if (ret < 0)
@@ -538,14 +675,6 @@ void tas256x_reload(struct tas256x_priv *p_tas256x, int chn)
 		goto end;
 	ret |= tas256x_set_bitwidth(p_tas256x,
 		p_tas256x->mn_rx_width, TAS256X_STREAM_CAPTURE);
-	if (ret < 0)
-		goto end;
-	ret = tas256x_rx_set_edge(p_tas256x, p_tas256x->mn_rx_edge,
-		channel_both);
-	if (ret < 0)
-		goto end;
-	ret = tas256x_rx_set_start_slot(p_tas256x,
-		p_tas256x->mn_rx_start_slot, channel_both);
 	if (ret < 0)
 		goto end;
 	ret |= tas256x_set_samplerate(p_tas256x, p_tas256x->mn_sampling_rate,
@@ -616,9 +745,9 @@ int tas256x_irq_work_func(struct tas256x_priv *p_tas256x)
 
 	for (i = 0; i < p_tas256x->mn_channels; i++) {
 		if (p_tas256x->devs[i]->spk_control == 1)
-			chnTemp |= 1<<i;
+			chnTemp |= 1 << i;
 	}
-	chn = (chnTemp == 0)?chn:(enum channel)chnTemp;
+	chn = (chnTemp == 0) ? chn : (enum channel)chnTemp;
 
 	if (chn & channel_left) {
 		n_result = tas256x_interrupt_read(p_tas256x,
@@ -646,9 +775,10 @@ int tas256x_irq_work_func(struct tas256x_priv *p_tas256x)
 		nDevInt3Status, nDevInt4Status,
 		p_tas256x->mn_err_code);
 
-	if (p_tas256x->mn_err_code)
-		goto reload;
-	else {
+	if (p_tas256x->mn_err_code) {
+		tas256x_irq_reload(p_tas256x);
+		goto end;
+	} else {
 		pr_err("%s: Power Up\n", __func__);
 		n_counter = 2;
 		while (n_counter > 0) {
@@ -680,14 +810,22 @@ int tas256x_irq_work_func(struct tas256x_priv *p_tas256x)
 
 			tas256x_interrupt_read(p_tas256x,
 				&irqreg, &irqreg2, channel_both);
-
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+			/*set p_tas256x->profile_cfg_id by tinymix*/
+			tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
+				TAS256X_BIN_BLK_PRE_POWER_UP);
+#endif
 			n_result = tas256x_set_power_up(p_tas256x, chn);
 			if (n_result < 0)
 				goto reload;
 
 			pr_err("%s: set ICN to -80dB\n", __func__);
 			n_result = tas256x_icn_data(p_tas256x, chn);
-
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+			/*set p_tas256x->profile_cfg_id by tinymix*/
+			tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
+				TAS256X_BIN_BLK_POST_POWER_UP);
+#endif
 			n_counter--;
 			if (n_counter > 0) {
 			/* in case check pow status
@@ -744,10 +882,17 @@ int tas256x_init_work_func(struct tas256x_priv *p_tas256x)
 	int n_result = 0;
 
 	pr_err("%s:\n", __func__);
-
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+	/*set p_tas256x->profile_cfg_id by tinymix*/
+	tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
+		TAS256X_BIN_BLK_PRE_POWER_UP);
+#endif
 	n_result = tas256x_set_power_up(p_tas256x, channel_both);
 	n_result = tas256x_icn_data(p_tas256x, channel_both);
-
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+	/*set p_tas256x->profile_cfg_id by tinymix*/
+	tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id, TAS256X_BIN_BLK_POST_POWER_UP);
+#endif
 	return n_result;
 }
 
@@ -821,7 +966,7 @@ err:
 int tas256x_probe(struct tas256x_priv *p_tas256x)
 {
 	int ret = 0;
-#ifdef CONFIG_TAS25XX_ALGO
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
 	struct linux_platform *plat_data =
 			(struct linux_platform *) p_tas256x->platform_data;
 #endif
@@ -831,23 +976,37 @@ int tas256x_probe(struct tas256x_priv *p_tas256x)
 	if (ret < 0)
 		goto end;
 	ret = tas256x_iv_sense_enable_set(p_tas256x, 1, channel_both);
-#ifdef CONFIG_TAS25XX_ALGO
-	tas_smartamp_add_algo_controls(plat_data->codec, plat_data->dev, p_tas256x->mn_channels);
-	/*Send IV Vbat format but don't update to algo yet*/
-	tas25xx_set_iv_bit_fomat(p_tas256x->mn_iv_width,
-		p_tas256x->mn_vbat, 0);
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
+	if (plat_data) {
+		tas_smartamp_add_algo_controls(plat_data->codec, plat_data->dev,
+			p_tas256x->mn_channels);
+		/*Send IV Vbat format but don't update to algo yet*/
+		tas25xx_set_iv_bit_fomat(p_tas256x->mn_iv_width,
+			p_tas256x->mn_vbat, 0);
+	}
 #endif
-
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+	ret = tas256x_load_container(p_tas256x);
+	pr_info("%s Bin file loading requested: %d\n", __func__, ret);
+#endif
 end:
 	return ret;
 }
 
 void tas256x_remove(struct tas256x_priv *p_tas256x)
 {
-#ifdef CONFIG_TAS25XX_ALGO
+#if IS_ENABLED(CONFIG_TAS25XX_ALGO)
 	struct linux_platform *plat_data =
 			(struct linux_platform *) p_tas256x->platform_data;
-	tas_smartamp_remove_algo_controls(plat_data->codec);
+	if (plat_data) {
+		tas_smartamp_remove_algo_controls(plat_data->codec);
+	}
+#else
+	/*Ignore argument*/
+	(void)p_tas256x;
+#endif
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+	tas256x_config_info_remove(p_tas256x);
 #endif
 }
 
@@ -864,41 +1023,18 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 
 	for (i = 0; i < p_tas256x->mn_channels; i++) {
 		if (p_tas256x->devs[i]->spk_control == 1)
-			chnTemp |= 1<<i;
+			chnTemp |= 1 << i;
 	}
-	chn = (chnTemp == 0) ? chn:(enum channel)chnTemp;
+	chn = (chnTemp == 0) ? chn : (enum channel)chnTemp;
 
 	switch (state) {
 	case TAS256X_POWER_ACTIVE:
-		/* if set format was not called by asoc, then set it default */
-		if (p_tas256x->mn_fmt == 0) {
-			if (p_tas256x->mn_fmt_mode == 2) { /*TDM Mode*/
-				/*SND_SOC_DAIFMT_IB_NF & SND_SOC_DAIFMT_DSP_B*/
-				n_result = tas256x_rx_set_edge(p_tas256x,
-					0, chn);
-				n_result |= tas256x_rx_set_frame_start(p_tas256x,
-					1, chn);
-				n_result |= tas256x_rx_set_start_slot(p_tas256x,
-					0, chn);
-			} else { /*I2S Mode*/
-				/*SND_SOC_DAIFMT_IB_NF & SND_SOC_DAIFMT_I2S*/
-				n_result = tas256x_rx_set_edge(p_tas256x,
-					0, chn);
-				n_result |= tas256x_rx_set_frame_start(p_tas256x,
-					1, chn);
-				n_result |= tas256x_rx_set_start_slot(p_tas256x,
-					1, chn);
-			}
-		}
-
 		n_result = tas256x_iv_sense_enable_set(p_tas256x, 1, chn);
-#ifdef CONFIG_TAS25XX_ALGO
-		/*tas25xx_send_algo_calibration();*/
-
-		/*Moved to probe*/
-		/*tas25xx_set_iv_bit_fomat (p_tas256x->mn_iv_width,
-		 *p_tas256x->mn_vbat, 1);
-		 */
+#if IS_ENABLED(CONFIG_TAS25XX_CALIB_VAL_BIG)
+		tas25xx_send_channel_mapping();
+		tas25xx_send_algo_calibration();
+		tas25xx_set_iv_bit_fomat(p_tas256x->mn_iv_width,
+			p_tas256x->mn_vbat, 1);
 #endif
 		/* Clear latched IRQ before power on */
 		tas256x_interrupt_clear(p_tas256x, chn);
@@ -919,6 +1055,11 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 		break;
 
 	case TAS256X_POWER_SHUTDOWN:
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+		/*set p_tas256x->profile_cfg_id by tinymix*/
+		tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
+			TAS256X_BIN_BLK_PRE_SHUTDOWN);
+#endif
 		for (i = 0; i < p_tas256x->mn_channels; i++) {
 			if (p_tas256x->devs[i]->device_id == DEVICE_TAS2564) {
 				if (chn & (i+1)) {
@@ -956,8 +1097,15 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 			}
 		}
 		p_tas256x->enable_irq(p_tas256x, false);
-#ifdef CONFIG_TAS25XX_ALGO
-		/*tas25xx_update_big_data();*/
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+		/*set p_tas256x->profile_cfg_id by tinymix*/
+		tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
+			TAS256X_BIN_BLK_POST_SHUTDOWN);
+#endif
+#if IS_ENABLED(CONFIG_TAS25XX_CALIB_VAL_BIG)
+		tas25xx_update_big_data();
+#endif
+#if IS_ENABLED(CONFIG_TISA_KBIN_INTF)
 		tas25xx_algo_set_inactive();
 #endif
 		break;
@@ -1170,7 +1318,7 @@ int tas256x_set_bitwidth(struct tas256x_priv *p_tas256x,
 	if (stream == TAS256X_STREAM_PLAYBACK) {
 		n_result |= tas256x_rx_set_bitwidth(p_tas256x, bitwidth,
 			channel_both);
-		n_result |= tas256x_rx_set_slot(p_tas256x, slot_width_tmp,
+		n_result |= tas256x_rx_set_slot_len(p_tas256x, slot_width_tmp,
 			channel_both);
 	} else { /*stream == TAS256X_STREAM_CAPTURE*/
 		n_result |= tas256x_iv_bitwidth_config(p_tas256x,
@@ -1192,6 +1340,7 @@ int tas256x_set_tdm_rx_slot(struct tas256x_priv *p_tas256x,
 	int slots, int slot_width)
 {
 	int ret = -1;
+	int bitwidth = slot_width;
 
 	if (((p_tas256x->mn_channels == 1) && (slots < 1)) ||
 		((p_tas256x->mn_channels == 2) && (slots < 2))) {
@@ -1207,9 +1356,9 @@ int tas256x_set_tdm_rx_slot(struct tas256x_priv *p_tas256x,
 		return ret;
 	}
 
-	ret = tas256x_rx_set_slot(p_tas256x, slot_width, channel_both);
+	ret = tas256x_rx_set_slot_len(p_tas256x, slot_width, channel_both);
 
-	switch (slot_width) {
+	switch (bitwidth) {
 	case 16:
 		ret = tas256x_rx_set_bitwidth(p_tas256x,
 			16, channel_both);
@@ -1256,10 +1405,7 @@ int tas256x_set_tdm_tx_slot(struct tas256x_priv *p_tas256x,
 	if (slot_width == 24)
 		slot_width = 32;
 
-	/*Set Rising Tx Edge*/
-	ret = tas256x_tx_set_edge(p_tas256x, 1, channel_both);
-
-	ret |= tas256x_iv_vbat_slot_config(p_tas256x, slot_width);
+	ret = tas256x_iv_vbat_slot_config(p_tas256x, slot_width);
 
 	if ((p_tas256x->mn_channels == 2) &&
 		(p_tas256x->mn_tx_slot_width == 16)) {
