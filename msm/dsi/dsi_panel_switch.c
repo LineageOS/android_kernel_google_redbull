@@ -969,13 +969,27 @@ struct gamma_calibration_info {
 	size_t len;
 };
 
+struct gamma_fixup_location {
+	u32 src_idx;
+	u32 dst_idx;
+	u8 cmd;
+	u8 mask;
+};
+
+struct gamma_fixup_info {
+	struct gamma_fixup_location *fixup_loc;
+	u32 fixup_loc_count;
+	u32 panel_id_len;
+	u8 *panel_id;
+};
+
 struct gamma_switch_data {
 	struct panel_switch_data base;
 	struct kthread_work gamma_work;
+	struct gamma_fixup_info fixup_gamma;
 	struct gamma_calibration_info cali_gamma;
 	u8 num_of_cali_gamma;
 	bool native_gamma_ready;
-
 };
 
 #define S6E3HC2_GAMMA_BAND_LEN 45
@@ -1662,8 +1676,30 @@ static int s6e3hc2_check_gamma_payload(const u8 *src, size_t len)
 	return num_payload;
 }
 
-static int s6e3hc2_overwrite_gamma_bands(u8 **gamma_data,
-					 const u8 *src, size_t len)
+static void s6e3hc2_gamma_fixup_after_overwrite(
+			const struct gamma_fixup_location *fixup_loc,
+			u8 *gamma_buf, const size_t len)
+{
+	const u32 src_idx = fixup_loc->src_idx;
+	const u32 dst_idx = fixup_loc->dst_idx;
+	const u8 mask = fixup_loc->mask;
+
+	if (len <= src_idx || len <= dst_idx) {
+		pr_warn("gamma length %zu of cmd 0x%x not enough\n", len,
+							fixup_loc->cmd);
+		return;
+	}
+
+	if (mask) {
+		gamma_buf[dst_idx] &= ~mask;
+		gamma_buf[dst_idx] |= (gamma_buf[src_idx] & mask);
+	}
+}
+
+static int s6e3hc2_overwrite_gamma_bands(
+			const struct dsi_panel_vendor_info *panel_info,
+			const struct gamma_fixup_info *fixup_gamma,
+			u8 **gamma_data, const u8 *src, size_t len)
 {
 	int i, num_of_reg;
 	size_t payload_len, read_len = 0;
@@ -1675,6 +1711,14 @@ static int s6e3hc2_overwrite_gamma_bands(u8 **gamma_data,
 	if (num_of_reg != S6E3HC2_NUM_GAMMA_TABLES - 1) {
 		pr_err("Invalid gamma bands\n");
 		return -EINVAL;
+	}
+
+	if (fixup_gamma) {
+		if (!panel_info || !panel_info->extinfo_length ||
+		    panel_info->extinfo_length != fixup_gamma->panel_id_len ||
+		    memcmp(panel_info->extinfo, fixup_gamma->panel_id,
+			    panel_info->extinfo_length))
+			fixup_gamma = NULL;
 	}
 
 	/* reg (1 byte) | band size (2 bytes) | band */
@@ -1694,6 +1738,15 @@ static int s6e3hc2_overwrite_gamma_bands(u8 **gamma_data,
 		}
 
 		memcpy(tmp_buf, payload + CALI_GAMMA_HEADER_SIZE, payload_len);
+		if (fixup_gamma && fixup_gamma->fixup_loc) {
+			int cnt;
+
+			for (cnt = 0; cnt < fixup_gamma->fixup_loc_count; cnt++)
+				if (cmd == fixup_gamma->fixup_loc[cnt].cmd)
+					s6e3hc2_gamma_fixup_after_overwrite(
+						&fixup_gamma->fixup_loc[cnt],
+						tmp_buf, payload_len);
+		}
 		read_len = CALI_GAMMA_HEADER_SIZE + payload_len;
 	}
 
@@ -1744,8 +1797,10 @@ static int s6e3hc2_overwrite_gamma_data(struct gamma_switch_data *sdata)
 			break;
 		}
 		payload += CALI_GAMMA_HEADER_SIZE;
-		rc = s6e3hc2_overwrite_gamma_bands(old_gamma_data,
-							payload, payload_len);
+		rc = s6e3hc2_overwrite_gamma_bands(&panel->vendor_info,
+						   &sdata->fixup_gamma,
+						   old_gamma_data, payload,
+						   payload_len);
 		if (rc) {
 			pr_err("Failed to overwrite gamma\n");
 			break;
@@ -1924,6 +1979,110 @@ static const struct attribute_group gamma_group = {
 	.attrs = gamma_attrs,
 };
 
+static void
+s6e3hc2_gamma_release_fixup_info(struct gamma_fixup_info *fixup_gamma)
+{
+	if (!fixup_gamma)
+		return;
+
+	kfree(fixup_gamma->fixup_loc);
+	fixup_gamma->fixup_loc = NULL;
+	fixup_gamma->fixup_loc_count = 0;
+
+	kfree(fixup_gamma->panel_id);
+	fixup_gamma->panel_id = NULL;
+	fixup_gamma->panel_id_len = 0;
+}
+
+#define GAMMA_FIXUP_LOCATION_LEN 4
+static void
+s6e3hc2_gamma_create_fixup_info(struct dsi_panel *panel,
+				struct gamma_fixup_info *fixup_gamma)
+{
+	struct dsi_display *display;
+	struct device_node *of_node;
+	int i, rc, id_len, loc_len, offset = 0;
+	u32 loc_count, *fixup_loc;
+
+	if (unlikely(!panel || !fixup_gamma))
+		return;
+
+	display = dsi_panel_to_display(panel);
+	if (unlikely(!display || !display->pdev)) {
+		pr_warn("Invalid device\n");
+		return;
+	}
+
+	of_node = display->pdev->dev.of_node;
+	if (unlikely(!of_node))
+		return;
+
+	id_len = of_property_count_u8_elems(of_node,
+			"google,gamma_fixup_panel_id");
+	if (id_len <= 0) {
+		pr_debug("Skip gamma fixup\n");
+		return;
+	}
+
+	fixup_gamma->panel_id = kzalloc(id_len *
+			sizeof(*fixup_gamma->panel_id), GFP_KERNEL);
+	if (!fixup_gamma->panel_id)
+		return;
+
+	rc = of_property_read_u8_array(of_node,
+			"google,gamma_fixup_panel_id",
+			fixup_gamma->panel_id, id_len);
+	if (rc) {
+		pr_err("Failed to parse panel id\n");
+		goto error;
+	}
+
+	loc_len = of_property_count_u32_elems(of_node,
+			"google,gamma_fixup_location");
+	if (loc_len <= 0 || loc_len % GAMMA_FIXUP_LOCATION_LEN != 0) {
+		pr_err("invalid format\n");
+		goto error;
+	}
+
+	loc_count = loc_len / GAMMA_FIXUP_LOCATION_LEN;
+	fixup_loc = kcalloc(loc_len, sizeof(*fixup_loc), GFP_KERNEL);
+	if (!fixup_loc)
+		goto error;
+
+	rc = of_property_read_u32_array(of_node,
+			"google,gamma_fixup_location", fixup_loc, loc_len);
+	if (rc) {
+		pr_err("Failed to parse location\n");
+		goto error_fixup_loc;
+	}
+
+	fixup_gamma->fixup_loc = kcalloc(loc_count,
+				sizeof(*fixup_gamma->fixup_loc), GFP_KERNEL);
+	if (!fixup_gamma->fixup_loc)
+		goto error_fixup_loc;
+
+	for (i = 0; i < loc_count; i++) {
+		fixup_gamma->fixup_loc[i].cmd = fixup_loc[offset];
+		fixup_gamma->fixup_loc[i].src_idx = fixup_loc[offset + 1];
+		fixup_gamma->fixup_loc[i].dst_idx = fixup_loc[offset + 2];
+		fixup_gamma->fixup_loc[i].mask = fixup_loc[offset + 3];
+		offset += GAMMA_FIXUP_LOCATION_LEN;
+	}
+
+	fixup_gamma->fixup_loc_count = loc_count;
+	fixup_gamma->panel_id_len = id_len;
+
+	kfree(fixup_loc);
+
+	return;
+
+error_fixup_loc:
+	kfree(fixup_loc);
+error:
+	kfree(fixup_gamma->panel_id);
+	fixup_gamma->panel_id = NULL;
+}
+
 static struct panel_switch_data *s6e3hc2_switch_create(struct dsi_panel *panel)
 {
 	struct gamma_switch_data *sdata;
@@ -1945,6 +2104,7 @@ static struct panel_switch_data *s6e3hc2_switch_create(struct dsi_panel *panel)
 	kthread_init_work(&sdata->gamma_work, s6e3hc2_gamma_work);
 	debugfs_create_file("gamma", 0600, sdata->base.debug_root,
 			    &sdata->base, &s6e3hc2_read_gamma_fops);
+	s6e3hc2_gamma_create_fixup_info(panel, &sdata->fixup_gamma);
 
 	return &sdata->base;
 }
@@ -1955,6 +2115,7 @@ static void s6e3hc2_switch_data_destroy(struct panel_switch_data *pdata)
 
 	sdata = container_of(pdata, struct gamma_switch_data, base);
 
+	s6e3hc2_gamma_release_fixup_info(&sdata->fixup_gamma);
 	panel_switch_data_deinit(pdata);
 	if (pdata->panel && pdata->panel->parent)
 		devm_kfree(pdata->panel->parent, sdata);
