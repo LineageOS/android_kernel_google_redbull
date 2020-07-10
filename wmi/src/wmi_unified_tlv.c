@@ -6601,6 +6601,7 @@ void wmi_copy_resource_config(wmi_resource_config *resource_cfg,
 	resource_cfg->num_packet_filters = tgt_res_cfg->num_packet_filters;
 	resource_cfg->num_max_sta_vdevs = tgt_res_cfg->num_max_sta_vdevs;
 	resource_cfg->max_bssid_indicator = tgt_res_cfg->max_bssid_indicator;
+	resource_cfg->max_ndi_interfaces = tgt_res_cfg->max_ndi;
 	if (tgt_res_cfg->atf_config)
 		WMI_RSRC_CFG_FLAG_ATF_CONFIG_ENABLE_SET(resource_cfg->flag1, 1);
 	if (tgt_res_cfg->mgmt_comp_evt_bundle_support)
@@ -13083,6 +13084,8 @@ static void populate_tlv_service(uint32_t *wmi_service)
 			WMI_SERVICE_PACKET_CAPTURE_SUPPORT;
 	wmi_service[wmi_service_peer_delete_no_peer_flush_tids_cmd] =
 		WMI_SERVICE_PEER_DELETE_NO_PEER_FLUSH_TIDS_CMD;
+	wmi_service[wmi_service_suiteb_roam_support] =
+			WMI_SERVICE_WPA3_SUITEB_ROAM_SUPPORT;
 }
 
 /**
