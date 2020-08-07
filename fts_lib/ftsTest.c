@@ -919,10 +919,11 @@ int checkLimitsMapAdjTotal(u16 *data, int row, int column, int *max)
   * @param frame pointer to a MutualSenseframe variable which will store the ITO
   *  MS RAW data. If NULL, no data will be returned while if MutualRawAdjITO
   *  item in todo is disabled the variable will be untouched
+  * @param max_val pointer to store the adjacent frame max node value
   * @return OK if success or an error code which specify the type of error
   */
 int production_test_ito(const char *path_limits, TestToDo *todo,
-			MutualSenseFrame *frame)
+			MutualSenseFrame *frame, u16 *max_val)
 {
 	int res = OK;
 	u8 sett[2] = { 0x00, 0x00 };
@@ -933,6 +934,9 @@ int production_test_ito(const char *path_limits, TestToDo *todo,
 	int *thresholds_max = NULL;
 	u16 *adj = NULL;
 	int trows, tcolumns;
+	int size;
+	int i;
+	int max_value;
 
 	msRawFrame.node_data = NULL;
 
@@ -1001,6 +1005,15 @@ int production_test_ito(const char *path_limits, TestToDo *todo,
 				__func__, ERROR_PROD_TEST_ITO);
 			goto ERROR;
 		}
+		size = (*ptr_frame).header.force_node *
+			((*ptr_frame).header.sense_node - 1);
+		max_value = adj[0];
+		for (i = 1; i < size; i++)
+			max_value = (adj[i] > max_value) ? adj[i] : max_value;
+		pr_info("%s: MSRAW ITO ADJH Max Value: %d\n",
+			__func__, max_value);
+		if (max_val != NULL)
+			*max_val = max_value;
 
 		res = parseProductionTestLimits(path_limits, &limit_file,
 						MS_RAW_ITO_ADJH, &thresholds,
@@ -1043,6 +1056,17 @@ int production_test_ito(const char *path_limits, TestToDo *todo,
 				__func__, ERROR_PROD_TEST_ITO);
 			goto ERROR;
 		}
+
+		size = ((*ptr_frame).header.force_node - 1) *
+			(*ptr_frame).header.sense_node;
+		max_value = adj[0];
+		for (i = 1; i < size; i++)
+			max_value = (adj[i] > max_value) ? adj[i] : max_value;
+		pr_info("%s: MSRAW ITO ADJV Max Value: %d\n",
+			__func__, max_value);
+		if (max_val != NULL)
+			*(max_val + 1) = max_value;
+
 
 		res = parseProductionTestLimits(path_limits, &limit_file,
 						MS_RAW_ITO_ADJV, &thresholds,
@@ -1208,7 +1232,7 @@ int production_test_main(const char *pathThresholds, int stop_on_fail,
 
 #ifndef SKIP_PRODUCTION_TEST
 	pr_info("ITO TEST:\n");
-	res = production_test_ito(pathThresholds, todo, NULL);
+	res = production_test_ito(pathThresholds, todo, NULL, NULL);
 	if (res < 0) {
 		pr_err("Error during ITO TEST! ERROR %08X\n", res);
 		/* in case of ITO TEST failure is no sense keep going */

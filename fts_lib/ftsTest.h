@@ -445,7 +445,7 @@ int checkLimitsGapOffsets(short *data, int row, int column, int threshold,
   * @{
   */
 int production_test_ito(const char *path_limits, TestToDo *todo,
-			MutualSenseFrame *frame);
+			MutualSenseFrame *frame, u16 *max_val);
 int production_test_initialization(u8 type);
 int production_test_main(const char *pathThresholds, int stop_on_fail,
 			 int saveInit, TestToDo *todo, u8 mpflag);

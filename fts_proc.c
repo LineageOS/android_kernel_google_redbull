@@ -804,6 +804,7 @@ static ssize_t fts_driver_test_write(struct file *file, const char __user *buf,
 	int meanNorm = 0, meanEdge = 0;
 
 	u64 address;
+	u16 ito_max_val[2] = {0x00};
 
 	Firmware fw;
 	LimitFile lim;
@@ -1997,7 +1998,7 @@ static ssize_t fts_driver_test_write(struct file *file, const char __user *buf,
 		case CMD_ITOTEST:
 			frameMS.node_data = NULL;
 			res = production_test_ito(limits_file, &tests,
-				&frameMS);
+				&frameMS, ito_max_val);
 
 			if (frameMS.node_data != NULL) {
 				size += (frameMS.node_data_size *
@@ -3018,6 +3019,18 @@ END:	/* here start the reporting phase, assembling the data to send in the
 				index += scnprintf(&driver_test_buff[index],
 						size - index, "%02X",
 						(u8)frameMS.header.sense_node);
+
+				index += scnprintf(&driver_test_buff[index],
+						size - index,
+						"%02X%02X",
+						(ito_max_val[0] & 0xFF00) >> 8,
+						ito_max_val[0] & 0xFF);
+
+				index += scnprintf(&driver_test_buff[index],
+						size - index,
+						"%02X%02X",
+						(ito_max_val[1] & 0xFF00) >> 8,
+						ito_max_val[1] & 0xFF);
 
 				for (j = 0; j < frameMS.node_data_size; j++) {
 					index += scnprintf(
