@@ -222,7 +222,7 @@ void release_all_touches(struct fts_ts_info *info)
   * error) \n
   * } = end byte
   */
-static ssize_t fts_fwupdate_store(struct device *dev,
+static ssize_t fwupdate_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -261,7 +261,7 @@ static ssize_t fts_fwupdate_store(struct device *dev,
 	return count;
 }
 
-static ssize_t fts_fwupdate_show(struct device *dev,
+static ssize_t fwupdate_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -279,7 +279,7 @@ static ssize_t fts_fwupdate_show(struct device *dev,
   * (first the less significant byte) \n
   * cat appid	show the external release version of the FW running in the IC
   */
-static ssize_t fts_appid_show(struct device *dev, struct device_attribute *attr,
+static ssize_t appid_show(struct device *dev, struct device_attribute *attr,
 			      char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -337,7 +337,7 @@ static ssize_t fts_appid_show(struct device *dev, struct device_attribute *attr,
   * } = end byte
   * @see fts_mode_handler()
   */
-static ssize_t fts_mode_active_show(struct device *dev,
+static ssize_t mode_active_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -351,7 +351,7 @@ static ssize_t fts_mode_active_show(struct device *dev,
   * cat fw_file_test			show on the kernel log external release
   * of the FW stored in the fw file/header file
   */
-static ssize_t fts_fw_test_show(struct device *dev,
+static ssize_t fw_file_test_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -376,7 +376,7 @@ static ssize_t fts_fw_test_show(struct device *dev,
 	return 0;
 }
 
-static ssize_t fts_status_show(struct device *dev,
+static ssize_t status_show(struct device *dev,
 			       struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -641,7 +641,7 @@ int check_feature_feasibility(struct fts_ts_info *info, unsigned int feature)
   * no error) \n
   * } = end byte
   */
-static ssize_t fts_feature_enable_store(struct device *dev,
+static ssize_t feature_enable_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -739,7 +739,7 @@ static ssize_t fts_feature_enable_store(struct device *dev,
 
 
 
-static ssize_t fts_feature_enable_show(struct device *dev,
+static ssize_t feature_enable_show(struct device *dev,
 				       struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -773,7 +773,7 @@ static ssize_t fts_feature_enable_show(struct device *dev,
   * info->grip_enabled (1 = enabled; 0= disabled) \n
   * } = end byte
   */
-static ssize_t fts_grip_mode_show(struct device *dev,
+static ssize_t grip_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -791,7 +791,7 @@ static ssize_t fts_grip_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_grip_mode_store(struct device *dev,
+static ssize_t grip_mode_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -853,7 +853,7 @@ static ssize_t fts_grip_mode_store(struct device *dev,
   * info->charger_enabled (>0 = enabled; 0= disabled) \n
   * } = end byte
   */
-static ssize_t fts_charger_mode_show(struct device *dev,
+static ssize_t charger_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -869,7 +869,7 @@ static ssize_t fts_charger_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_charger_mode_store(struct device *dev,
+static ssize_t charger_mode_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -931,7 +931,7 @@ static ssize_t fts_charger_mode_store(struct device *dev,
   * info->glove_enabled (1 = enabled; 0= disabled) \n
   * } = end byte
   */
-static ssize_t fts_glove_mode_show(struct device *dev,
+static ssize_t glove_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -947,7 +947,7 @@ static ssize_t fts_glove_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_glove_mode_store(struct device *dev,
+static ssize_t glove_mode_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1018,7 +1018,7 @@ static ssize_t fts_glove_mode_store(struct device *dev,
   * the cover can be handled also using a notifier, in this case the body of
   * these functions should be copied in the notifier callback
   */
-static ssize_t fts_cover_mode_show(struct device *dev,
+static ssize_t cover_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -1034,7 +1034,7 @@ static ssize_t fts_cover_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_cover_mode_store(struct device *dev,
+static ssize_t cover_mode_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1094,7 +1094,7 @@ static ssize_t fts_cover_mode_store(struct device *dev,
   * (1 = enabled; 0= disabled)\n
   * } = end byte
   */
-static ssize_t fts_stylus_mode_show(struct device *dev,
+static ssize_t stylus_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -1110,7 +1110,7 @@ static ssize_t fts_stylus_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_stylus_mode_store(struct device *dev,
+static ssize_t stylus_mode_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1182,7 +1182,7 @@ static ssize_t fts_stylus_mode_store(struct device *dev,
   * (1 = enabled; 0= disabled)\n
   * } = end byte
   */
-static ssize_t fts_gesture_mask_show(struct device *dev,
+static ssize_t gesture_mask_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0, res, temp;
@@ -1207,14 +1207,14 @@ static ssize_t fts_gesture_mask_show(struct device *dev,
 			res = ERROR_OP_NOT_ALLOW;
 
 		if (res < OK)
-			pr_err("fts_gesture_mask_store: ERROR %08X\n", res);
+			pr_err("%s: ERROR %08X\n", __func__, res);
 	}
 	res |= check_feature_feasibility(info, FEAT_SEL_GESTURE);
 	temp = isAnyGestureActive();
 	if (res >= OK || temp == FEAT_DISABLE)
 		info->gesture_enabled = temp;
 
-	pr_info("fts_gesture_mask_store: Gesture Enabled = %d\n",
+	pr_info("%s: Gesture Enabled = %d\n", __func__,
 		 info->gesture_enabled);
 
 	count += scnprintf(buf + count,
@@ -1226,7 +1226,7 @@ static ssize_t fts_gesture_mask_show(struct device *dev,
 }
 
 
-static ssize_t fts_gesture_mask_store(struct device *dev,
+static ssize_t gesture_mask_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1235,8 +1235,8 @@ static ssize_t fts_gesture_mask_store(struct device *dev,
 	unsigned int temp;
 
 	if ((count + 1) / 3 > GESTURE_MASK_SIZE + 1) {
-		pr_err("fts_gesture_mask_store: Number of bytes of parameter wrong! %zu > (enable/disable + %d )\n",
-			(count + 1) / 3, GESTURE_MASK_SIZE);
+		pr_err("%s: Number of bytes of parameter wrong! %zu > (enable/disable + %d )\n",
+			__func__, (count + 1) / 3, GESTURE_MASK_SIZE);
 		mask[0] = 0;
 	} else {
 		mask[0] = ((count + 1) / 3) - 1;
@@ -1288,13 +1288,13 @@ static ssize_t fts_gesture_mask_store(struct device *dev,
   * (1 = enabled; 0= disabled)\n
   * } = end byte
   */
-static ssize_t fts_gesture_mask_show(struct device *dev,
+static ssize_t gesture_mask_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
 	struct fts_ts_info *info = dev_get_drvdata(dev);
 
-	pr_info("fts_gesture_mask_show: gesture_enabled = %d\n",
+	pr_info("%s: gesture_enabled = %d\n", __func__,
 		info->gesture_enabled);
 
 	count += scnprintf(buf + count,
@@ -1306,7 +1306,7 @@ static ssize_t fts_gesture_mask_show(struct device *dev,
 }
 
 
-static ssize_t fts_gesture_mask_store(struct device *dev,
+static ssize_t gesture_mask_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1324,8 +1324,8 @@ static ssize_t fts_gesture_mask_store(struct device *dev,
 	}
 
 	if ((count + 1) / 3 < 2 || (count + 1) / 3 > GESTURE_MASK_SIZE + 1) {
-		pr_err("fts_gesture_mask_store: Number of bytes of parameter wrong! %d < or > (enable/disable + at least one gestureID or max %d bytes)\n",
-			(count + 1) / 3, GESTURE_MASK_SIZE);
+		pr_err("%s: Number of bytes of parameter wrong! %d < or > (enable/disable + at least one gestureID or max %d bytes)\n",
+			__func__, (count + 1) / 3, GESTURE_MASK_SIZE);
 		mask[0] = 0;
 	} else {
 		memset(mask, 0, GESTURE_MASK_SIZE + 2);
@@ -1367,7 +1367,7 @@ END:
 			res = ERROR_OP_NOT_ALLOW;
 
 		if (res < OK)
-			pr_err("fts_gesture_mask_store: ERROR %08X\n", res);
+			pr_err("%s: ERROR %08X\n", __func__, res);
 	}
 
 	res = check_feature_feasibility(info, FEAT_SEL_GESTURE);
@@ -1398,7 +1398,7 @@ END:
   * \n
   * } = end byte
   */
-static ssize_t fts_gesture_coordinates_show(struct device *dev,
+static ssize_t gesture_coordinates_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
@@ -1626,7 +1626,7 @@ static int touchsim_stop(struct fts_touchsim *touchsim)
   *  1 = test running.
   *  0 = test not running.
   */
-static ssize_t fts_touch_simulation_show(struct device *dev,
+static ssize_t touchsim_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
@@ -1642,7 +1642,7 @@ static ssize_t fts_touch_simulation_show(struct device *dev,
   *  1 = start the test if not already running.
   *  0 = stop the test if its running.
   */
-static ssize_t fts_touch_simulation_store(struct device *dev,
+static ssize_t touchsim_store(struct device *dev,
 					  struct device_attribute *attr,
 					  const char *buf,
 					  size_t count)
@@ -1684,7 +1684,7 @@ out:
   *  0 = Dynamic change motion filter
   *  1 = Default motion filter by FW
   */
-static ssize_t fts_default_mf_show(struct device *dev,
+static ssize_t default_mf_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
@@ -1693,7 +1693,7 @@ static ssize_t fts_default_mf_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%d\n", info->use_default_mf ? 1 : 0);
 }
 
-static ssize_t fts_default_mf_store(struct device *dev,
+static ssize_t default_mf_store(struct device *dev,
 					  struct device_attribute *attr,
 					  const char *buf,
 					  size_t count)
@@ -2463,7 +2463,7 @@ END:
 	return index;
 }
 
-static ssize_t fts_autotune_store(struct device *dev,
+static ssize_t autotune_store(struct device *dev,
 				  struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
@@ -2493,7 +2493,7 @@ err_args:
 	return ret < 0 ? ret : count;
 }
 
-static ssize_t fts_autotune_show(struct device *dev,
+static ssize_t autotune_show(struct device *dev,
 				 struct device_attribute *attr,
 				 char *buf)
 {
@@ -2502,7 +2502,7 @@ static ssize_t fts_autotune_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "{ %08X }\n", info->autotune_stat);
 }
 
-static ssize_t fts_infoblock_getdata_show(struct device *dev,
+static ssize_t infoblock_getdata_show(struct device *dev,
 					  struct device_attribute *attr,
 					  char *buf)
 {
@@ -2691,7 +2691,7 @@ END:
  * 2 = FTS_HEATMAP_FULL
  */
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
-static ssize_t fts_heatmap_mode_store(struct device *dev,
+static ssize_t heatmap_mode_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -2709,7 +2709,7 @@ static ssize_t fts_heatmap_mode_store(struct device *dev,
 	return count;
 }
 
-static ssize_t fts_heatmap_mode_show(struct device *dev,
+static ssize_t heatmap_mode_show(struct device *dev,
 					  struct device_attribute *attr,
 					  char *buf)
 {
@@ -2720,77 +2720,57 @@ static ssize_t fts_heatmap_mode_show(struct device *dev,
 }
 #endif
 
-static DEVICE_ATTR(infoblock_getdata, (0444),
-		   fts_infoblock_getdata_show, NULL);
-static DEVICE_ATTR(fwupdate, 0664, fts_fwupdate_show,
-		   fts_fwupdate_store);
-static DEVICE_ATTR(appid, 0444, fts_appid_show, NULL);
-static DEVICE_ATTR(mode_active, 0444, fts_mode_active_show, NULL);
-static DEVICE_ATTR(fw_file_test, 0444, fts_fw_test_show, NULL);
-static DEVICE_ATTR(status, 0444, fts_status_show, NULL);
-static DEVICE_ATTR(stm_fts_cmd, 0664, stm_fts_cmd_show,
-		   stm_fts_cmd_store);
+static DEVICE_ATTR_RO(infoblock_getdata);
+static DEVICE_ATTR_RW(fwupdate);
+static DEVICE_ATTR_RO(appid);
+static DEVICE_ATTR_RO(mode_active);
+static DEVICE_ATTR_RO(fw_file_test);
+static DEVICE_ATTR_RO(status);
+static DEVICE_ATTR_RW(stm_fts_cmd);
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
-static DEVICE_ATTR(heatmap_mode, 0664, fts_heatmap_mode_show,
-		   fts_heatmap_mode_store);
+static DEVICE_ATTR_RW(heatmap_mode);
 #endif
 #ifdef USE_ONE_FILE_NODE
-static DEVICE_ATTR(feature_enable, 0664,
-		   fts_feature_enable_show, fts_feature_enable_store);
+static DEVICE_ATTR_RW(feature_enable);
 #else
 
 
 #ifdef GRIP_MODE
-static DEVICE_ATTR(grip_mode, 0664, fts_grip_mode_show,
-		   fts_grip_mode_store);
+static DEVICE_ATTR_RW(grip_mode);
 #endif
 
 #ifdef CHARGER_MODE
-static DEVICE_ATTR(charger_mode, 0664,
-		   fts_charger_mode_show, fts_charger_mode_store);
+static DEVICE_ATTR_RW(charger_mode);
 #endif
 
 #ifdef GLOVE_MODE
-static DEVICE_ATTR(glove_mode, 0664,
-		   fts_glove_mode_show, fts_glove_mode_store);
+static DEVICE_ATTR_RW(glove_mode);
 #endif
 
 #ifdef COVER_MODE
-static DEVICE_ATTR(cover_mode, 0664,
-		   fts_cover_mode_show, fts_cover_mode_store);
+static DEVICE_ATTR_RW(cover_mode);
 #endif
 
 #ifdef STYLUS_MODE
-static DEVICE_ATTR(stylus_mode, 0664,
-		   fts_stylus_mode_show, fts_stylus_mode_store);
+static DEVICE_ATTR_RW(stylus_mode);
 #endif
 
 #endif
 
 #ifdef GESTURE_MODE
-static DEVICE_ATTR(gesture_mask, 0664,
-		   fts_gesture_mask_show, fts_gesture_mask_store);
-static DEVICE_ATTR(gesture_coordinates, 0664,
-		   fts_gesture_coordinates_show, NULL);
+static DEVICE_ATTR_RW(gesture_mask);
+static DEVICE_ATTR_RO(gesture_coordinates);
 #endif
-static DEVICE_ATTR(autotune, 0664, fts_autotune_show, fts_autotune_store);
+static DEVICE_ATTR_RW(autotune);
 
-static DEVICE_ATTR(touchsim, 0664,
-		   fts_touch_simulation_show,
-		   fts_touch_simulation_store);
+static DEVICE_ATTR_RW(touchsim);
 
-static DEVICE_ATTR(default_mf, 0664,
-		   fts_default_mf_show,
-		   fts_default_mf_store);
+static DEVICE_ATTR_RW(default_mf);
 
 #ifdef SUPPORT_PROX_PALM
-static DEVICE_ATTR(audio_status, 0644,
-		   audio_status_show,
-		   audio_status_store);
+static DEVICE_ATTR_RW(audio_status);
 
-static DEVICE_ATTR(prox_palm_status, 0644,
-		   prox_palm_status_show,
-		   prox_palm_status_store);
+static DEVICE_ATTR_RW(prox_palm_status);
 #endif
 
 /*  /sys/devices/soc.0/f9928000.i2c/i2c-6/6-0049 */
