@@ -4798,10 +4798,12 @@ static int fts_init_sensing(struct fts_ts_info *info)
 	int error = 0;
 
 #ifdef CONFIG_DRM
-	error |= drm_panel_notifier_register(info->board->panel,
-		&info->notifier); /* register the
-				   * suspend/resume
-				   * function */
+	if (info->board->panel) {
+		/* register the suspend/resume function */
+		error |= drm_panel_notifier_register(info->board->panel,
+			&info->notifier);
+	} else
+		pr_info("%s: Skip DRM notifier registration\n", __func__);
 #endif
 	error |= fts_interrupt_install(info);	/* register event handler */
 	error |= fts_mode_handler(info, 0);	/* enable the features and
@@ -6053,7 +6055,9 @@ ProbeErrorExit_7:
 		destroy_workqueue(info->touchsim.wq);
 
 #ifdef CONFIG_DRM
-	drm_panel_notifier_unregister(info->board->panel, &info->notifier);
+	if (info->board->panel)
+		drm_panel_notifier_unregister(info->board->panel,
+					      &info->notifier);
 #endif
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
@@ -6132,7 +6136,9 @@ static int fts_remove(struct spi_device *client)
 	pm_qos_remove_request(&info->pm_qos_req);
 
 #ifdef CONFIG_DRM
-	drm_panel_notifier_unregister(info->board->panel, &info->notifier);
+	if (info->board->panel)
+		drm_panel_notifier_unregister(info->board->panel,
+					      &info->notifier);
 #endif
 
 	/* unregister the device */
