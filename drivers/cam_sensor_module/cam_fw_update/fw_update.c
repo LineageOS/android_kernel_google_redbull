@@ -306,9 +306,7 @@ int GyroReCalibrate(struct camera_io_master *io_master_info,
 		cal_result->SsDiffY, cal_result->SsDiffY);
 
 	if (abs(cal_result->SsRecalOffX) >= 0x600 ||
-		abs(cal_result->SsRecalOffY) >= 0x600 ||
-		abs(cal_result->SsDiffX) >= 0x1000 ||
-		abs(cal_result->SsDiffY) >= 0x1000) {
+		abs(cal_result->SsRecalOffY) >= 0x600) {
 		CAM_ERR(CAM_SENSOR,
 			"[OISCali] Check failed.");
 		return -EINVAL;
