@@ -3721,13 +3721,13 @@ int fts_proc_init(void)
 	int retval = 0;
 
 
-	fts_dir = proc_mkdir_data("fts", 0777, NULL, NULL);
+	fts_dir = proc_mkdir_data("fts", 0555, NULL, NULL);
 	if (fts_dir == NULL) {	/* directory creation failed */
 		retval = -ENOMEM;
 		goto out;
 	}
 
-	entry = proc_create(DRIVER_TEST_FILE_NODE, 0777, fts_dir,
+	entry = proc_create(DRIVER_TEST_FILE_NODE, 0666, fts_dir,
 			    &fts_driver_test_ops);
 
 	if (entry)
