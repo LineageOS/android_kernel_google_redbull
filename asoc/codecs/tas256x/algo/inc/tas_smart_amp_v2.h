@@ -27,9 +27,6 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 
-#define CONFIG_TAS25XX_ALGO_STEREO
-#define CONFIG_SET_RE_IN_KERNEL
-
 #if KERNEL_VERSION(4, 19, 0) <= LINUX_VERSION_CODE
 struct snd_soc_component;
 #else

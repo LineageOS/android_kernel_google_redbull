@@ -286,9 +286,15 @@ static int tas256x_dac_event(struct snd_soc_dapm_widget *w,
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
 		dev_info(plat_data->dev, "SND_SOC_DAPM_POST_PMU\n");
+		if (p_tas256x->mb_power_up == false)
+			tas256x_set_power_state(p_tas256x,
+				TAS256X_POWER_ACTIVE);
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
 		dev_info(plat_data->dev, "SND_SOC_DAPM_PRE_PMD\n");
+		if (p_tas256x->mb_power_up == true)
+			tas256x_set_power_state(p_tas256x,
+				TAS256X_POWER_SHUTDOWN);
 		break;
 	}
 
@@ -643,18 +649,7 @@ static int tas256x_mute_stream(struct snd_soc_dai *dai, int mute, int stream)
 	dev_dbg(plat_data->dev, "%s, stream %s mute %d\n", __func__,
 		(stream == SNDRV_PCM_STREAM_PLAYBACK) ? ("Playback") : ("Capture"),
 		mute);
-	mutex_lock(&p_tas256x->codec_lock);
 
-	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		if (mute)
-			tas256x_set_power_state(p_tas256x,
-				TAS256X_POWER_SHUTDOWN);
-		else
-			tas256x_set_power_state(p_tas256x,
-				TAS256X_POWER_ACTIVE);
-	}
-
-	mutex_unlock(&p_tas256x->codec_lock);
 	return 0;
 }
 
