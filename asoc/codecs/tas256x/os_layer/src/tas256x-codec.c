@@ -1291,6 +1291,8 @@ static int tas256x_codec_probe(struct snd_soc_component *codec)
 	struct tas256x_priv *p_tas256x = snd_soc_component_get_drvdata(codec);
 	struct linux_platform *plat_data =
 		(struct linux_platform *) p_tas256x->platform_data;
+	struct snd_soc_dapm_context *dapm =
+			snd_soc_component_get_dapm(codec);
 
 	if (plat_data)
 		plat_data->codec = codec;
@@ -1303,9 +1305,24 @@ static int tas256x_codec_probe(struct snd_soc_component *codec)
 		return ret;
 	}
 
+	snd_soc_dapm_ignore_suspend(dapm, "ASI1 Playback");
+	snd_soc_dapm_ignore_suspend(dapm, "ASI1 Capture");
+	if (p_tas256x->mn_channels == 2) {
+		snd_soc_dapm_ignore_suspend(dapm, "OUT1");
+		snd_soc_dapm_ignore_suspend(dapm, "OUT2");
+		snd_soc_dapm_ignore_suspend(dapm, "VMON");
+		snd_soc_dapm_ignore_suspend(dapm, "IMON");
+	} else {
+		snd_soc_dapm_ignore_suspend(dapm, "OUT");
+		snd_soc_dapm_ignore_suspend(dapm, "VMON");
+		snd_soc_dapm_ignore_suspend(dapm, "IMON");
+	}
+
+	snd_soc_dapm_sync(dapm);
+
 	for (i = 0; i < p_tas256x->mn_channels; i++) {
 		if (p_tas256x->devs[i]->dev_ops.tas_probe)
-			ret |= (p_tas256x->devs[i]->dev_ops.tas_probe)(p_tas256x, codec, i+1);
+			ret |= (p_tas256x->devs[i]->dev_ops.tas_probe)(p_tas256x, codec, i + 1);
 	}
 
 	/* Generic Probe */
@@ -1321,6 +1338,8 @@ static int tas256x_codec_probe(struct snd_soc_codec *codec)
 	struct tas256x_priv *p_tas256x = snd_soc_codec_get_drvdata(codec);
 	struct linux_platform *plat_data =
 		(struct linux_platform *) p_tas256x->platform_data;
+	struct snd_soc_dapm_context *dapm =
+			snd_soc_codec_get_dapm(codec);
 
 	if (plat_data)
 		plat_data->codec = codec;
@@ -1334,9 +1353,24 @@ static int tas256x_codec_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
+	snd_soc_dapm_ignore_suspend(dapm, "ASI1 Playback");
+	snd_soc_dapm_ignore_suspend(dapm, "ASI1 Capture");
+	if (p_tas256x->mn_channels == 2) {
+		snd_soc_dapm_ignore_suspend(dapm, "OUT1");
+		snd_soc_dapm_ignore_suspend(dapm, "OUT2");
+		snd_soc_dapm_ignore_suspend(dapm, "VMON");
+		snd_soc_dapm_ignore_suspend(dapm, "IMON");
+	} else {
+		snd_soc_dapm_ignore_suspend(dapm, "OUT");
+		snd_soc_dapm_ignore_suspend(dapm, "VMON");
+		snd_soc_dapm_ignore_suspend(dapm, "IMON");
+	}
+
+	snd_soc_dapm_sync(dapm);
+
 	for (i = 0; i < p_tas256x->mn_channels; i++) {
 		if (p_tas256x->devs[i]->dev_ops.tas_probe)
-			ret |= (p_tas256x->devs[i]->dev_ops.tas_probe)(p_tas256x, codec, i+1);
+			ret |= (p_tas256x->devs[i]->dev_ops.tas_probe)(p_tas256x, codec, i + 1);
 	}
 	/* Generic Probe */
 	ret = tas256x_probe(p_tas256x);
