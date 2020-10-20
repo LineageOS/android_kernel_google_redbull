@@ -1257,7 +1257,7 @@ void schedule_init_work(struct tas256x_priv *p_tas256x)
 	struct linux_platform *plat_data = NULL;
 
 	plat_data = (struct linux_platform *) p_tas256x->platform_data;
-	schedule_delayed_work(&p_tas256x->irq_work, msecs_to_jiffies(50));
+	schedule_delayed_work(&p_tas256x->init_work, msecs_to_jiffies(50));
 }
 
 static int tas256x_parse_dt(struct device *dev,

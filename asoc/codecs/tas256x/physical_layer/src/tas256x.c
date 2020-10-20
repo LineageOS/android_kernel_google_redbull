@@ -915,6 +915,13 @@ int tas256x_set_clock_config(struct tas256x_priv *p_tas256x, int value, int ch)
 		n_result = p_tas256x->write(p_tas256x, ch,
 			TAS256X_CLOCKCONFIGURATION, 0x0c);
 	}
+	/* Increase the clock halt timer to 838ms to avoid
+	 * TDM Clock errors during playback start/stop
+	 */
+	n_result |= p_tas256x->update_bits(p_tas256x, ch,
+		TAS256X_INTERRUPTCONFIGURATION,
+		TAS256X_CLOCK_HALT_TIMER_MASK,
+		TAS256X_CLOCK_HALT_838MS);
 
 	return n_result;
 }

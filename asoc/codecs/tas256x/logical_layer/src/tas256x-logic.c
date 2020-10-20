@@ -372,8 +372,7 @@ void tas256x_failsafe(struct tas256x_priv  *p_tas256x)
 		p_tas256x->mn_restart++;
 		msleep(100);
 		pr_err("I2C COMM error, restart SmartAmp.\n");
-		schedule_delayed_work(&p_tas256x->irq_work,
-			msecs_to_jiffies(100));
+		tas256x_set_power_state(p_tas256x, p_tas256x->mn_power_state);
 		return;
 	}
 
@@ -810,22 +809,6 @@ int tas256x_irq_work_func(struct tas256x_priv *p_tas256x)
 
 			tas256x_interrupt_read(p_tas256x,
 				&irqreg, &irqreg2, channel_both);
-#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
-			/*set p_tas256x->profile_cfg_id by tinymix*/
-			tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
-				TAS256X_BIN_BLK_PRE_POWER_UP);
-#endif
-			n_result = tas256x_set_power_up(p_tas256x, chn);
-			if (n_result < 0)
-				goto reload;
-
-			pr_err("%s: set ICN to -80dB\n", __func__);
-			n_result = tas256x_icn_data(p_tas256x, chn);
-#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
-			/*set p_tas256x->profile_cfg_id by tinymix*/
-			tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
-				TAS256X_BIN_BLK_POST_POWER_UP);
-#endif
 			n_counter--;
 			if (n_counter > 0) {
 			/* in case check pow status
@@ -881,18 +864,17 @@ int tas256x_init_work_func(struct tas256x_priv *p_tas256x)
 {
 	int n_result = 0;
 
-	pr_err("%s:\n", __func__);
-#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
-	/*set p_tas256x->profile_cfg_id by tinymix*/
-	tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,
-		TAS256X_BIN_BLK_PRE_POWER_UP);
-#endif
-	n_result = tas256x_set_power_up(p_tas256x, channel_both);
-	n_result = tas256x_icn_data(p_tas256x, channel_both);
-#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
-	/*set p_tas256x->profile_cfg_id by tinymix*/
-	tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id, TAS256X_BIN_BLK_POST_POWER_UP);
-#endif
+	pr_info("%s:\n", __func__);
+
+	/* Clear latched IRQ before power on */
+	n_result = tas256x_interrupt_clear(p_tas256x, channel_both);
+
+	/*Un-Mask interrupt for TDM*/
+	n_result = tas256x_interrupt_enable(p_tas256x, 1/*Enable*/,
+		channel_both);
+
+	p_tas256x->enable_irq(p_tas256x, true);
+
 	return n_result;
 }
 
@@ -1039,6 +1021,26 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 		/* Clear latched IRQ before power on */
 		tas256x_interrupt_clear(p_tas256x, chn);
 
+		/*Mask interrupt for TDM*/
+		n_result = tas256x_interrupt_enable(p_tas256x, 0/*Disable*/,
+			channel_both);
+
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+		/*set p_tas256x->profile_cfg_id by tinymix*/
+		tas256x_select_cfg_blk(p_tas256x,
+			p_tas256x->profile_cfg_id,
+			TAS256X_BIN_BLK_PRE_POWER_UP);
+#endif
+		n_result = tas256x_set_power_up(p_tas256x, chn);
+
+		pr_info("%s: set ICN to -80dB\n", __func__);
+		n_result = tas256x_icn_data(p_tas256x, chn);
+#if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
+		/*set p_tas256x->profile_cfg_id by tinymix*/
+		tas256x_select_cfg_blk(p_tas256x,
+			p_tas256x->profile_cfg_id,
+			TAS256X_BIN_BLK_POST_POWER_UP);
+#endif
 		p_tas256x->mb_power_up = true;
 		p_tas256x->mn_power_state = TAS256X_POWER_ACTIVE;
 		p_tas256x->schedule_init_work(p_tas256x);
