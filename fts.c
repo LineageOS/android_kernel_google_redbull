@@ -58,6 +58,8 @@
 #include <linux/input/mt.h>
 #endif
 
+#include <linux/input/touch_offload.h>
+
 #include <drm/drm_panel.h>
 #include <video/display_timing.h>
 
@@ -172,6 +174,9 @@ void release_all_touches(struct fts_ts_info *info)
 		input_report_abs(info->input_dev, ABS_MT_PRESSURE, 0);
 		input_mt_report_slot_state(info->input_dev, type, 0);
 		input_report_abs(info->input_dev, ABS_MT_TRACKING_ID, -1);
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+		info->offload.coords[i].status = COORD_STATUS_INACTIVE;
+#endif
 	}
 	input_report_key(info->input_dev, BTN_TOUCH, 0);
 	input_sync(info->input_dev);
@@ -269,7 +274,6 @@ static ssize_t fwupdate_show(struct device *dev,
 	/* fwupdate_stat: ERROR code Returned by flashProcedure. */
 	return scnprintf(buf, PAGE_SIZE, "{ %08X }\n", info->fwupdate_stat);
 }
-
 
 /***************************************** UTILITIES
   * (current fw_ver/conf_id, active mode, file fw_ver/conf_id)
@@ -3023,7 +3027,6 @@ static bool fts_enter_pointer_event_handler(struct fts_ts_info *info, unsigned
 	if (y > info->board->y_axis_max)
 		y = info->board->y_axis_max;
 
-	input_mt_slot(info->input_dev, touchId);
 	switch (touchType) {
 #ifdef STYLUS_MODE
 	case TOUCH_TYPE_STYLUS:
@@ -3083,12 +3086,28 @@ static bool fts_enter_pointer_event_handler(struct fts_ts_info *info, unsigned
 		goto no_report;
 	}
 
+
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	info->offload.coords[touchId].x = x;
+	info->offload.coords[touchId].y = y;
+	info->offload.coords[touchId].major = major;
+	info->offload.coords[touchId].minor = minor;
+	info->offload.coords[touchId].status = COORD_STATUS_FINGER;
+
+#ifndef SKIP_PRESSURE
+	info->offload.coords[touchId].pressure = z;
+#else
+	/* Select a reasonable constant pressure */
+	info->offload.coords[touchId].pressure = 0x30;
+#endif
+
+	if (!info->offload.offload_running) {
+#endif
+
+	input_mt_slot(info->input_dev, touchId);
 	input_report_key(info->input_dev, BTN_TOUCH, touch_condition);
 	input_mt_report_slot_state(info->input_dev, tool, 1);
-
-	/* pr_info("%s : TouchID = %d,Touchcount = %d\n", __func__,
-	  *	touchId,touchcount); */
-
 	input_report_abs(info->input_dev, ABS_MT_POSITION_X, x);
 	input_report_abs(info->input_dev, ABS_MT_POSITION_Y, y);
 	input_report_abs(info->input_dev, ABS_MT_TOUCH_MAJOR, major);
@@ -3099,6 +3118,10 @@ static bool fts_enter_pointer_event_handler(struct fts_ts_info *info, unsigned
 
 #ifndef SKIP_DISTANCE
 	input_report_abs(info->input_dev, ABS_MT_DISTANCE, distance);
+#endif
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	}
 #endif
 	/* pr_info("%s :  Event 0x%02x - ID[%d], (x, y) = (%3d, %3d)
 	 * Size = %d\n",
@@ -3123,9 +3146,6 @@ static bool fts_leave_pointer_event_handler(struct fts_ts_info *info, unsigned
 	touchType = event[1] & 0x0F;
 	touchId = (event[1] & 0xF0) >> 4;
 
-	input_mt_slot(info->input_dev, touchId);
-
-	input_report_abs(info->input_dev, ABS_MT_PRESSURE, 0);
 	switch (touchType) {
 #ifdef STYLUS_MODE
 	case TOUCH_TYPE_STYLUS:
@@ -3160,15 +3180,20 @@ static bool fts_leave_pointer_event_handler(struct fts_ts_info *info, unsigned
 		return false;
 	}
 
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	info->offload.coords[touchId].status = COORD_STATUS_INACTIVE;
+	if (!info->offload.offload_running) {
+#endif
+
+	input_mt_slot(info->input_dev, touchId);
+	input_report_abs(info->input_dev, ABS_MT_PRESSURE, 0);
 	input_mt_report_slot_state(info->input_dev, tool, 0);
-
-	/* pr_info("%s : TouchID = %d, Touchcount = %d\n", __func__,
-	 *	touchId,touchcount); */
-
-
 	input_report_abs(info->input_dev, ABS_MT_TRACKING_ID, -1);
-	/* pr_info("%s : Event 0x%02x - release ID[%d]\n", __func__,
-	 *	event[0], touchId); */
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	}
+#endif
+
 	return true;
 }
 
@@ -3964,6 +3989,7 @@ static bool read_heatmap_raw(struct v4l2_heatmap *v4l2)
 	} else if (info->heatmap_mode == FTS_HEATMAP_FULL) {
 		MutualSenseFrame ms_frame = { 0 };
 		uint32_t frame_index = 0, x, y;
+		uint32_t x_val, y_val;
 
 		result = getMSFrame3(MS_STRENGTH, &ms_frame);
 		if (result <= 0) {
@@ -3977,16 +4003,19 @@ static bool read_heatmap_raw(struct v4l2_heatmap *v4l2)
 				/* Rotate frame counter-clockwise and invert
 				 * if necessary.
 				 */
-				if (!info->board->sensor_inverted) {
-					heatmap_value =
-					    (strength_t)ms_frame.node_data[
-						((max_x-1) - x) * max_y + y];
-				} else {
-					heatmap_value =
-					    (strength_t)ms_frame.node_data[
-						((max_x-1) - x) * max_y +
-						((max_y-1) - y)];
-				}
+				if (info->board->sensor_inverted_x)
+					x_val = (max_x - 1) - x;
+				else
+					x_val = x;
+				if (info->board->sensor_inverted_y)
+					y_val = (max_y - 1) - y;
+				else
+					y_val = y;
+
+				heatmap_value =
+				    (strength_t)ms_frame.node_data[
+					x_val * max_y + y_val];
+
 				v4l2->frame[frame_index++] = heatmap_value;
 			}
 		}
@@ -4057,6 +4086,207 @@ static int update_motion_filter(struct fts_ts_info *info)
 	return 0;
 }
 
+
+int fts_enable_grip(struct fts_ts_info *info, bool enable)
+{
+	static uint8_t enable_cmd[]  =
+		{0xC0, 0x03, 0x10, 0xFF, 0x03, 0x00, 0x00, 0x00, 0x00};
+	static uint8_t disable_cmd[] =
+		{0xC0, 0x03, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	int res;
+
+	if (enable)
+		res = fts_write(enable_cmd, sizeof(enable_cmd));
+	else
+		res = fts_write(disable_cmd, sizeof(disable_cmd));
+	if (res < 0)
+		pr_err("%s: fts_write failed with res=%d.\n", __func__,
+		       res);
+
+	return res;
+}
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+
+static void fts_offload_resume_work(struct work_struct *work)
+{
+	struct delayed_work *dwork = container_of(work, struct delayed_work,
+						  work);
+	struct fts_ts_info *info = container_of(dwork, struct fts_ts_info,
+						offload_resume_work);
+
+	fts_enable_grip(info, false);
+}
+
+static void fts_populate_coordinate_channel(struct fts_ts_info *info,
+					struct touch_offload_frame *frame,
+					int channel)
+{
+	int j;
+
+	struct TouchOffloadDataCoord *dc =
+		(struct TouchOffloadDataCoord *)frame->channel_data[channel];
+	memset(dc, 0, frame->channel_data_size[channel]);
+	dc->header.channel_type = TOUCH_DATA_TYPE_COORD;
+	dc->header.channel_size = TOUCH_OFFLOAD_FRAME_SIZE_COORD;
+
+	for (j = 0; j < MAX_COORDS; j++) {
+		dc->coords[j].x = info->offload.coords[j].x;
+		dc->coords[j].y = info->offload.coords[j].y;
+		dc->coords[j].major = info->offload.coords[j].major;
+		dc->coords[j].minor = info->offload.coords[j].minor;
+		dc->coords[j].pressure = info->offload.coords[j].pressure;
+		dc->coords[j].status = info->offload.coords[j].status;
+	}
+}
+
+static void fts_populate_mutual_channel(struct fts_ts_info *info,
+					struct touch_offload_frame *frame,
+					int channel)
+{
+	MutualSenseFrame ms_frame = { 0 };
+	uint32_t frame_index = 0, x, y;
+	uint32_t x_val, y_val;
+	uint16_t heatmap_value;
+	int result;
+	uint32_t data_type = 0;
+	struct TouchOffloadData2d *mutual_strength =
+		(struct TouchOffloadData2d *)frame->channel_data[channel];
+
+	switch (frame->channel_type[channel] & ~TOUCH_SCAN_TYPE_MUTUAL) {
+	case TOUCH_DATA_TYPE_RAW:
+		data_type = MS_RAW;
+		break;
+	case TOUCH_DATA_TYPE_FILTERED:
+		data_type = MS_FILTER;
+		break;
+	case TOUCH_DATA_TYPE_STRENGTH:
+		data_type = MS_STRENGTH;
+		break;
+	case TOUCH_DATA_TYPE_BASELINE:
+		data_type = MS_BASELINE;
+		break;
+	}
+	mutual_strength->tx_size = getForceLen();
+	mutual_strength->rx_size = getSenseLen();
+	mutual_strength->header.channel_type = frame->channel_type[channel];
+	mutual_strength->header.channel_size =
+		TOUCH_OFFLOAD_FRAME_SIZE_2D(mutual_strength->rx_size,
+					    mutual_strength->tx_size);
+
+	result = getMSFrame3(data_type, &ms_frame);
+	if (result <= 0) {
+		pr_err("getMSFrame3 failed with result=0x%08X.\n", result);
+	} else {
+		uint32_t max_x = mutual_strength->tx_size;
+		uint32_t max_y = mutual_strength->rx_size;
+
+		for (y = 0; y < mutual_strength->rx_size; y++) {
+			for (x = 0; x < mutual_strength->tx_size; x++) {
+				/* Rotate frame counter-clockwise and invert
+				 * if necessary.
+				 */
+				if (info->board->sensor_inverted_x)
+					x_val = (max_x - 1) - x;
+				else
+					x_val = x;
+				if (info->board->sensor_inverted_y)
+					y_val = (max_y - 1) - y;
+				else
+					y_val = y;
+
+				heatmap_value =
+				    ms_frame.node_data[
+					x_val * max_y + y_val];
+
+				((uint16_t *)
+				 mutual_strength->data)[frame_index++] =
+				    heatmap_value;
+			}
+		}
+	}
+	kfree(ms_frame.node_data);
+}
+
+static void fts_populate_self_channel(struct fts_ts_info *info,
+					struct touch_offload_frame *frame,
+					int channel)
+{
+	SelfSenseFrame ss_frame = { 0 };
+	int result;
+	uint32_t data_type = 0;
+	struct TouchOffloadData1d *self_strength =
+		(struct TouchOffloadData1d *)frame->channel_data[channel];
+	self_strength->tx_size = getForceLen();
+	self_strength->rx_size = getSenseLen();
+	self_strength->header.channel_type = frame->channel_type[channel];
+	self_strength->header.channel_size =
+		TOUCH_OFFLOAD_FRAME_SIZE_1D(self_strength->rx_size,
+					    self_strength->tx_size);
+
+	switch (frame->channel_type[channel] & ~TOUCH_SCAN_TYPE_SELF) {
+	case TOUCH_DATA_TYPE_RAW:
+		data_type = SS_RAW;
+		break;
+	case TOUCH_DATA_TYPE_FILTERED:
+		data_type = SS_FILTER;
+		break;
+	case TOUCH_DATA_TYPE_STRENGTH:
+		data_type = SS_STRENGTH;
+		break;
+	case TOUCH_DATA_TYPE_BASELINE:
+		data_type = SS_BASELINE;
+		break;
+	}
+	result = getSSFrame3(data_type, &ss_frame);
+	if (result <= 0) {
+		pr_err("getSSFrame3 failed with result=0x%08X.\n", result);
+	} else {
+		memcpy(self_strength->data, ss_frame.force_data,
+		       2 * self_strength->tx_size);
+		memcpy(&self_strength->data[2 * self_strength->tx_size],
+		       ss_frame.sense_data, 2 * self_strength->rx_size);
+	}
+	kfree(ss_frame.force_data);
+	kfree(ss_frame.sense_data);
+}
+
+static void fts_populate_frame(struct fts_ts_info *info,
+				struct touch_offload_frame *frame)
+{
+	static u64 index;
+	int i;
+
+	frame->header.index = index++;
+	frame->header.timestamp = info->timestamp;
+
+	/* Populate all channels */
+	for (i = 0; i < frame->num_channels; i++) {
+		if (frame->channel_type[i] == TOUCH_DATA_TYPE_COORD)
+			fts_populate_coordinate_channel(info, frame, i);
+		else if ((frame->channel_type[i] & TOUCH_SCAN_TYPE_MUTUAL) != 0)
+			fts_populate_mutual_channel(info, frame, i);
+		else if ((frame->channel_type[i] & TOUCH_SCAN_TYPE_SELF) != 0)
+			fts_populate_self_channel(info, frame, i);
+	}
+}
+
+static void fts_offload_set_running(struct fts_ts_info *info, bool running)
+{
+	if (info->offload.offload_running != running) {
+		info->offload.offload_running = running;
+		if (running) {
+			pr_info("%s: disabling FW grip.\n", __func__);
+			fts_enable_grip(info, false);
+		} else {
+			pr_info("%s: enabling FW grip.\n", __func__);
+			fts_enable_grip(info, true);
+		}
+	}
+}
+
+#endif /* CONFIG_TOUCHSCREEN_OFFLOAD */
+
 /**
   * Bottom Half Interrupt Handler function
   * This handler is called each time there is at least one new event in the FIFO
@@ -4076,6 +4306,10 @@ static irqreturn_t fts_interrupt_handler(int irq, void *handle)
 	unsigned char events_remaining = 0;
 	unsigned char *evt_data;
 	bool processed_pointer_event = false;
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	struct touch_offload_frame *frame = NULL;
+#endif
 
 	/* It is possible that interrupts were disabled while the handler is
 	 * executing, before acquiring the mutex. If so, simply return.
@@ -4123,11 +4357,44 @@ static irqreturn_t fts_interrupt_handler(int irq, void *handle)
 		}
 	}
 
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	if (!info->offload.offload_running) {
+#endif
+
 	if (info->touch_id == 0)
 		input_report_key(info->input_dev, BTN_TOUCH, 0);
 
 	input_sync(info->input_dev);
 
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	}
+
+	if (processed_pointer_event) {
+		error = touch_offload_reserve_frame(&info->offload, &frame);
+		if (error != 0) {
+			pr_debug("%s: Could not reserve a frame: error=%d.\n",
+				 __func__, error);
+
+			/* Stop offload when there are no buffers available */
+			fts_offload_set_running(info, false);
+		} else {
+			fts_offload_set_running(info, true);
+
+			fts_populate_frame(info, frame);
+
+			error = touch_offload_queue_frame(&info->offload,
+							  frame);
+			if (error != 0) {
+				pr_err("%s: Failed to queue reserved frame: error=%d.\n",
+				       __func__, error);
+			}
+		}
+	}
+#endif
+
+	/* TODO(spfetsch): if the mutual strength heatmap was already read into
+	 * the touch offload interface, use it here instead of reading again.
+	 */
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	if (processed_pointer_event)
 		heatmap_read(&info->v4l2, ktime_to_ns(info->timestamp));
@@ -4140,6 +4407,53 @@ static irqreturn_t fts_interrupt_handler(int irq, void *handle)
 	fts_set_bus_ref(info, FTS_BUS_REF_IRQ, false);
 	return IRQ_HANDLED;
 }
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+static void fts_offload_report(void *handle,
+			       struct TouchOffloadIocReport *report)
+{
+	struct fts_ts_info *info = (struct fts_ts_info *)handle;
+	bool touch_down = 0;
+	int i;
+
+	input_set_timestamp(info->input_dev, report->timestamp);
+
+	for (i = 0; i < MAX_COORDS; i++) {
+		if (report->coords[i].status == COORD_STATUS_FINGER) {
+			input_mt_slot(info->input_dev, i);
+			touch_down = 1;
+			input_report_key(info->input_dev, BTN_TOUCH,
+					 touch_down);
+			input_mt_report_slot_state(info->input_dev,
+						   MT_TOOL_FINGER, 1);
+			input_report_abs(info->input_dev, ABS_MT_POSITION_X,
+					 report->coords[i].x);
+			input_report_abs(info->input_dev, ABS_MT_POSITION_Y,
+					 report->coords[i].y);
+			input_report_abs(info->input_dev, ABS_MT_TOUCH_MAJOR,
+					 report->coords[i].major);
+			input_report_abs(info->input_dev, ABS_MT_TOUCH_MINOR,
+					 report->coords[i].minor);
+
+#ifndef SKIP_PRESSURE
+			input_report_abs(info->input_dev, ABS_MT_PRESSURE,
+					 report->coords[i].pressure);
+#endif
+		} else {
+			input_mt_slot(info->input_dev, i);
+			input_report_abs(info->input_dev, ABS_MT_PRESSURE, 0);
+			input_mt_report_slot_state(info->input_dev,
+						   MT_TOOL_FINGER, 0);
+			input_report_abs(info->input_dev, ABS_MT_TRACKING_ID,
+					 -1);
+		}
+	}
+
+	input_report_key(info->input_dev, BTN_TOUCH, touch_down);
+
+	input_sync(info->input_dev);
+}
+#endif /* CONFIG_TOUCHSCREEN_OFFLOAD */
 
 /*
  * Read the display panel's extinfo from the display driver.
@@ -4257,7 +4571,6 @@ static int fts_identify_panel(struct fts_ts_info *info)
 	u32 filter_panel_index, filter_extinfo_index, filter_extinfo_mask;
 	u32 filter_extinfo_value, filter_extinfo_fw;
 	const char *name;
-	u32 inverted;
 	int i;
 	int ret = 0;
 
@@ -4355,13 +4668,6 @@ get_panel_info_failed:
 	else
 		info->board->limits_name = name;
 	pr_info("limits name = %s\n", info->board->limits_name);
-
-	inverted = 0;
-	if (info->board->panel)
-		of_property_read_u32_index(np, "st,sensor_inverted",
-					   panel_index, &inverted);
-	info->board->sensor_inverted = (inverted != 0);
-	pr_info("Sensor inverted = %u\n", inverted);
 
 	return ret;
 }
@@ -4631,7 +4937,9 @@ static irqreturn_t fts_isr(int irq, void *handle)
 	struct fts_ts_info *info = handle;
 
 	info->timestamp = ktime_get();
+#if !IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
 	input_set_timestamp(info->input_dev, info->timestamp);
+#endif
 
 	return IRQ_WAKE_THREAD;
 }
@@ -5082,6 +5390,19 @@ static void fts_resume_work(struct work_struct *work)
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	/* heatmap must be enabled after every chip reset (fts_system_reset) */
 	heatmap_enable();
+#endif
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	/* Set touch_offload configuration */
+	if (info->offload.offload_running) {
+		pr_info("%s: applying touch_offload settings.\n", __func__);
+		if (!info->offload.config.filter_grip) {
+			/* The grip disable command will not take effect unless
+			 * it is delayed ~100ms.
+			 */
+			schedule_delayed_work(&info->offload_resume_work, 100);
+		}
+	}
 #endif
 
 	fts_enableInterrupt(true);
@@ -5684,6 +6005,16 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 	bdata->x_axis_max = coords[0];
 	bdata->y_axis_max = coords[1];
 
+	bdata->sensor_inverted_x = 0;
+	if (of_property_read_bool(np, "st,sensor_inverted_x"))
+		bdata->sensor_inverted_x = 1;
+	pr_info("Sensor inverted x = %u\n", bdata->sensor_inverted_x);
+
+	bdata->sensor_inverted_y = 0;
+	if (of_property_read_bool(np, "st,sensor_inverted_y"))
+		bdata->sensor_inverted_y = 1;
+	pr_info("Sensor inverted y = %u\n", bdata->sensor_inverted_y);
+
 	return OK;
 }
 
@@ -6015,6 +6346,40 @@ static int fts_probe(struct spi_device *client)
 		goto ProbeErrorExit_6;
 #endif
 
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	info->offload.caps.touch_offload_major_version = 1;
+	info->offload.caps.touch_offload_minor_version = 0;
+	/* ID equivalent to the 4-byte, little-endian string: '00b5' */
+	info->offload.caps.device_id =
+	    '5' << 24 | 'b' << 16 | '0' << 8 | '0' << 0;
+	info->offload.caps.display_width = info->board->x_axis_max;
+	info->offload.caps.display_height = info->board->y_axis_max;
+	info->offload.caps.tx_size = getForceLen();
+	info->offload.caps.rx_size = getSenseLen();
+	info->offload.caps.bus_type = BUS_TYPE_SPI;
+	info->offload.caps.bus_speed_hz = 10000000;
+	info->offload.caps.heatmap_size = HEATMAP_SIZE_FULL;
+	info->offload.caps.touch_data_types =
+	    TOUCH_DATA_TYPE_COORD | TOUCH_DATA_TYPE_RAW |
+	    TOUCH_DATA_TYPE_STRENGTH | TOUCH_DATA_TYPE_FILTERED |
+	    TOUCH_DATA_TYPE_BASELINE;
+	info->offload.caps.touch_scan_types =
+	    TOUCH_SCAN_TYPE_MUTUAL | TOUCH_SCAN_TYPE_SELF;
+	info->offload.caps.continuous_reporting = true;
+	info->offload.caps.noise_reporting = false;
+	info->offload.caps.cancel_reporting = false;
+	info->offload.caps.size_reporting = true;
+	info->offload.caps.filter_grip = true;
+	info->offload.caps.filter_palm = true;
+	info->offload.caps.num_sensitivity_settings = 1;
+
+	INIT_DELAYED_WORK(&info->offload_resume_work, fts_offload_resume_work);
+
+	info->offload.hcallback = (void *)info;
+	info->offload.report_cb = fts_offload_report;
+	touch_offload_init(&info->offload);
+#endif
+
 #if defined(FW_UPDATE_ON_PROBE) && defined(FW_H_FILE)
 	pr_info("FW Update and Sensing Initialization:\n");
 	error = fts_fw_update(info);
@@ -6077,6 +6442,10 @@ ProbeErrorExit_7:
 	if (info->board->panel)
 		drm_panel_notifier_unregister(info->board->panel,
 					      &info->notifier);
+#endif
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	touch_offload_cleanup(&info->offload);
 #endif
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
@@ -6147,6 +6516,10 @@ static int fts_remove(struct spi_device *client)
 
 	/* remove interrupt and event handlers */
 	fts_interrupt_uninstall(info);
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	touch_offload_cleanup(&info->offload);
+#endif
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	heatmap_remove(&info->v4l2);

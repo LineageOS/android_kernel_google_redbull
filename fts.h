@@ -37,6 +37,7 @@
 #include <linux/input/heatmap.h>
 #endif
 #include <linux/pm_qos.h>
+#include <linux/input/touch_offload.h>
 #include <drm/drm_panel.h>
 #include "fts_lib/ftsSoftware.h"
 #include "fts_lib/ftsHardware.h"
@@ -287,7 +288,8 @@ struct fts_hw_platform_data {
 	const char *avdd_reg_name;	/* /< name of the AVDD regulator */
 	const char *fw_name;
 	const char *limits_name;
-	bool sensor_inverted;
+	bool sensor_inverted_x;
+	bool sensor_inverted_y;
 	int x_axis_max;
 	int y_axis_max;
 	bool auto_fw_update;
@@ -412,6 +414,12 @@ struct fts_ts_info {
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	struct v4l2_heatmap v4l2;
 #endif
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
+	struct touch_offload_context offload;
+	struct delayed_work offload_resume_work;
+#endif
+
 	struct delayed_work fwu_work;	/* Work for fw update */
 	struct workqueue_struct *fwu_workqueue;	/* Fw update work queue */
 	event_dispatch_handler_t *event_dispatch_table;	/* Dispatch table */
