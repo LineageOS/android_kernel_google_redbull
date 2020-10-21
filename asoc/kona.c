@@ -2,7 +2,9 @@
 /*
  * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
  */
+#ifdef CONFIG_DYNAMIC_DEBUG
 #define DEBUG
+#endif
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
