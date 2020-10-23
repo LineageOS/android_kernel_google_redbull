@@ -176,7 +176,7 @@ int tas_calib_init(void)
 {
 	int rc;
 
-	pr_err("TI-SmartPA: %s", __func__);
+	pr_info("TI-SmartPA: %s", __func__);
 	rc = misc_register(&tas_calib_misc);
 	if (rc)
 		pr_err("TI-SmartPA: %s: register calib misc failed\n",

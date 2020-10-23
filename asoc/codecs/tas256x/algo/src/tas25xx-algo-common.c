@@ -244,7 +244,7 @@ void tas_smartamp_add_algo_controls(struct snd_soc_codec *codec,
 	bin_file_set_device (dev);
 	bin_file_parse_init();
 
-	pr_err("TI-SmartPA: %s: Initialising kbin file done\n", __func__);
+	pr_info("TI-SmartPA: %s: Initialising kbin file done\n", __func__);
 #endif
 
 	tas_calib_init();

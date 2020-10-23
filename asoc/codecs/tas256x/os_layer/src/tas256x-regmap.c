@@ -16,9 +16,6 @@
  */
 
 #if IS_ENABLED(CONFIG_TAS256X_REGMAP)
-#ifdef CONFIG_DYNAMIC_DEBUG
-#define DEBUG 5
-#endif
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/err.h>

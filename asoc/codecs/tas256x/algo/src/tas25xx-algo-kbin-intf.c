@@ -172,11 +172,16 @@ static void query_tisa_algo(struct work_struct *wrk)
 		codec_misc_amp_put(0, (long)trans_val_to_int(re_l, scale, QFORMAT19));
 		codec_misc_amp_put(1, (long)trans_val_to_int(re_r, scale, QFORMAT19));
 #endif
-		pr_debug("[TI-SmartPA:%s] Re value is %02d.%02d (%d), %02d.%02d (%d) \n", __func__,
-			(int32_t)trans_val_to_user_i(re_l, QFORMAT19), (int32_t)trans_val_to_user_m(re_l, QFORMAT19, 100), re_l,
-			(int32_t)trans_val_to_user_i(re_r, QFORMAT19), (int32_t)trans_val_to_user_m(re_r, QFORMAT19, 100), re_r);
+		pr_debug("[TI-SmartPA:%s] Re value is %02d.%02d (%d), %02d.%02d (%d) \n",
+			__func__,
+			(int32_t)trans_val_to_user_i(re_l, QFORMAT19),
+			(int32_t)trans_val_to_user_m(re_l, QFORMAT19, 100),
+			re_l,
+			(int32_t)trans_val_to_user_i(re_r, QFORMAT19),
+			(int32_t)trans_val_to_user_m(re_r, QFORMAT19, 100),
+			re_r);
 
-		usleep_range (sleep_us, sleep_us_max);
+		usleep_range(sleep_us, sleep_us_max);
 	}
 }
 
@@ -214,14 +219,14 @@ static int tas25xx_send_kbin_params(void)
 				ret = tas25xx_smartamp_algo_ctrl((u8 *)data, param_id,
 					TAS_SET_PARAM, size * sizeof(int), TISA_MOD_RX);
 				if (ret) {
-					pr_info("TI-SmartPA: %s data send error = %d\n", __func__, ret);
+					pr_err("TI-SmartPA: %s data send error = %d\n", __func__, ret);
 				}
 				data += size;
 				sent += size;
 				param_sz_rem -= size;
 				current_idx += size;
 
-				pr_info("TI-SmartPA: %s send=%d, param_sz_rem=%d(total=%d), last sent sz=%d\n",
+				pr_debug("TI-SmartPA: %s send=%d, param_sz_rem=%d(total=%d), last sent sz=%d\n",
 					__func__, sent, param_sz_rem, per_ch_param_sz, size);
 			}
 		}
@@ -421,7 +426,7 @@ static int tas25xx_get_re_common(int channel)
 	int re_value = 0;
 	int param_id = 0;
 
-	pr_info("TI-SmartPA: %s, channel=%d\n", __func__, channel);
+	pr_debug("TI-SmartPA: %s, channel=%d\n", __func__, channel);
 
 	if (s_tas_smartamp_enable && (s_calib_test_flag || s_allow_dsp_query)) {
 		param_id = TAS_CALC_PARAM_IDX(TAS_SA_GET_RE, 1, channel);
@@ -982,7 +987,7 @@ void tas_smartamp_add_codec_mixer_controls(struct snd_soc_component *codec)
 void tas_smartamp_add_codec_mixer_controls(struct snd_soc_codec *codec)
 #endif
 {
-	pr_err("TI-SmartPA: %s: Adding smartamp controls\n", __func__);
+	pr_debug("TI-SmartPA: %s: Adding smartamp controls\n", __func__);
 
 	/*Initialize all to global variables to 0s*/
 	s_tas_smartamp_enable = 0;

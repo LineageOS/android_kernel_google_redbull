@@ -108,7 +108,7 @@ static int tas256x_dev_read(struct tas256x_priv *p_tas256x,
 		if (chn&channel_right)
 			p_tas256x->mn_err_code |= ERROR_DEVB_I2C_COMM;
 	} else {
-		pr_err(
+		pr_debug(
 			"%s: chn:%x:BOOK:PAGE:REG 0x%02x:0x%02x:0x%02x,0x%02x\n",
 			__func__,
 			p_tas256x->devs[chn >> 1]->mn_addr, TAS256X_BOOK_ID(reg),
@@ -162,7 +162,7 @@ static int tas256x_dev_write(struct tas256x_priv *p_tas256x, enum channel chn,
 				if (chn&channel_right)
 					p_tas256x->mn_err_code |= ERROR_DEVB_I2C_COMM;
 			} else {
-				pr_err(
+				pr_debug(
 					"%s: %u: chn:0x%02x:BOOK:PAGE:REG 0x%02x:0x%02x:0x%02x, VAL: 0x%02x\n",
 					__func__, __LINE__,
 					p_tas256x->devs[i]->mn_addr,
@@ -221,7 +221,7 @@ static int tas256x_dev_bulk_write(struct tas256x_priv *p_tas256x,
 				if (chn&channel_right)
 					p_tas256x->mn_err_code |= ERROR_DEVB_I2C_COMM;
 			} else {
-				pr_err(
+				pr_debug(
 					"%s: chn%x:BOOK:PAGE:REG 0x%02x:0x%02x:0x%02x, len: %u\n",
 					__func__, p_tas256x->devs[i]->mn_addr,
 					TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg),
@@ -272,7 +272,7 @@ static int tas256x_dev_bulk_read(struct tas256x_priv *p_tas256x,
 		if (chn&channel_right)
 			p_tas256x->mn_err_code |= ERROR_DEVB_I2C_COMM;
 	} else {
-		pr_err(
+		pr_debug(
 			"%s: chn%x:BOOK:PAGE:REG %u:%u:%u, len: 0x%02x\n",
 			__func__, p_tas256x->devs[chn >> 1]->mn_addr,
 			TAS256X_BOOK_ID(reg), TAS256X_PAGE_ID(reg),
@@ -327,7 +327,7 @@ static int tas256x_dev_update_bits(struct tas256x_priv *p_tas256x,
 				p_tas256x->mn_err_code |=
 					(chn == channel_left) ? ERROR_DEVA_I2C_COMM : ERROR_DEVB_I2C_COMM;
 			} else {
-				pr_err(
+				pr_debug(
 					"%s: chn%x:BOOK:PAGE:REG 0x%02x:0x%02x:0x%02x, mask: 0x%02x, val: 0x%02x\n",
 					__func__, p_tas256x->devs[i]->mn_addr,
 					TAS256X_BOOK_ID(reg),
@@ -365,7 +365,7 @@ void tas256x_failsafe(struct tas256x_priv  *p_tas256x)
 {
 	int n_result;
 
-	pr_err("tas256x %s\n", __func__);
+	pr_err("%s\n", __func__);
 	p_tas256x->mn_err_code |= ERROR_FAILSAFE;
 
 	if (p_tas256x->mn_restart < RESTART_MAX) {
@@ -418,7 +418,7 @@ int tas256x_load_init(struct tas256x_priv *p_tas256x)
 {
 	int ret = 0, i;
 
-	pr_err("%s:\n", __func__);
+	pr_info("%s:\n", __func__);
 
 	for (i = 0; i < p_tas256x->mn_channels; i++) {
 		if (p_tas256x->devs[i]->dev_ops.tas_init)
@@ -558,7 +558,7 @@ void tas256x_irq_reload(struct tas256x_priv *p_tas256x)
 {
 	int ret = 0;
 
-	pr_err("%s:\n", __func__);
+	pr_info("%s:\n", __func__);
 	ret |= tas256x_set_power_state(p_tas256x, p_tas256x->mn_power_state);
 	/* power up failed, restart later */
 	if (ret < 0) {
@@ -573,7 +573,7 @@ void tas256x_load_config(struct tas256x_priv *p_tas256x)
 {
 	int ret = 0;
 
-	pr_err("%s:\n", __func__);
+	pr_info("%s:\n", __func__);
 	tas256x_hard_reset(p_tas256x);
 	msleep(20);
 
@@ -647,7 +647,7 @@ void tas256x_reload(struct tas256x_priv *p_tas256x, int chn)
 	/*To be used later*/
 	(void)chn;
 
-	pr_err("%s: chn %d\n", __func__, chn);
+	pr_info("%s: chn %d\n", __func__, chn);
 	p_tas256x->enable_irq(p_tas256x, false);
 
 	ret |= tas56x_software_reset(p_tas256x, channel_both);
@@ -697,7 +697,7 @@ static int tas2558_specific(struct tas256x_priv *p_tas256x, int chn)
 {
 	int ret = 0;
 
-	pr_err("%s: chn %d\n", __func__, chn);
+	pr_info("%s: chn %d\n", __func__, chn);
 	ret = tas256x_boost_volt_update(p_tas256x, DEVICE_TAS2558, chn);
 
 	return ret;
@@ -707,7 +707,7 @@ static int tas2564_specific(struct tas256x_priv *p_tas256x, int chn)
 {
 	int ret = 0;
 
-	pr_err("%s: chn %d\n", __func__, chn);
+	pr_info("%s: chn %d\n", __func__, chn);
 	ret = tas256x_boost_volt_update(p_tas256x, DEVICE_TAS2564, chn);
 
 	return ret;
@@ -722,7 +722,7 @@ int tas256x_irq_work_func(struct tas256x_priv *p_tas256x)
 	int irqreg, irqreg2, i, chnTemp = 0;
 	enum channel chn = channel_left;
 
-	pr_err("%s:\n", __func__);
+	pr_info("%s:\n", __func__);
 
 	p_tas256x->enable_irq(p_tas256x, false);
 
@@ -882,7 +882,7 @@ int tas256x_dc_work_func(struct tas256x_priv *p_tas256x, int ch)
 {
 	int n_result = 0;
 
-	pr_err("%s: ch %d\n", __func__, ch);
+	pr_info("%s: ch %d\n", __func__, ch);
 	tas256x_reload(p_tas256x, ch);
 
 	return n_result;
@@ -893,7 +893,7 @@ int tas256x_register_device(struct tas256x_priv  *p_tas256x)
 	int n_result;
 	int i;
 
-	pr_err("%s:\n", __func__);
+	pr_info("%s:\n", __func__);
 	p_tas256x->read = tas256x_dev_read;
 	p_tas256x->write = tas256x_dev_write;
 	p_tas256x->bulk_read = tas256x_dev_bulk_read;
@@ -902,7 +902,7 @@ int tas256x_register_device(struct tas256x_priv  *p_tas256x)
 
 	tas256x_hard_reset(p_tas256x);
 
-	pr_err("Before SW reset\n");
+	pr_info("Before SW reset\n");
 	/* Reset the chip */
 	n_result = tas56x_software_reset(p_tas256x, channel_both);
 	if (n_result < 0) {
@@ -910,7 +910,7 @@ int tas256x_register_device(struct tas256x_priv  *p_tas256x)
 		goto err;
 	}
 
-	pr_err("After SW reset\n");
+	pr_info("After SW reset\n");
 
 	for (i = 0; i < p_tas256x->mn_channels; i++) {
 		n_result = tas56x_get_chipid(p_tas256x,
@@ -921,23 +921,23 @@ int tas256x_register_device(struct tas256x_priv  *p_tas256x)
 		switch (p_tas256x->devs[i]->mn_chip_id) {
 		case 0x10:
 		case 0x20:
-			pr_err("TAS2562 chip");
 			p_tas256x->devs[i]->device_id = DEVICE_TAS2562;
 			p_tas256x->devs[i]->dev_ops.tas_init = NULL;
 			break;
 		case 0x00:
-			pr_err("TAS2564 chip");
 			p_tas256x->devs[i]->device_id = DEVICE_TAS2564;
 			p_tas256x->devs[i]->dev_ops.tas_init =
 				tas2564_specific;
 			break;
 		default:
-			pr_err("TAS2558 chip");
 			p_tas256x->devs[i]->device_id = DEVICE_TAS2558;
 			p_tas256x->devs[i]->dev_ops.tas_init =
 				tas2558_specific;
 			break;
 		}
+		pr_info("TAS%x chip, chip_id = 0x%x",
+				p_tas256x->devs[i]->device_id,
+				p_tas256x->devs[i]->mn_chip_id);
 		n_result |= tas256x_set_misc_config(p_tas256x, 0,
 				(i == 0) ? channel_left : channel_right);
 	}
@@ -953,7 +953,7 @@ int tas256x_probe(struct tas256x_priv *p_tas256x)
 			(struct linux_platform *) p_tas256x->platform_data;
 #endif
 
-	pr_err("%s:\n", __func__);
+	pr_info("%s:\n", __func__);
 	ret = tas256x_load_init(p_tas256x);
 	if (ret < 0)
 		goto end;
@@ -998,7 +998,7 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 	int n_result = 0, i = 0, chnTemp = 0;
 	enum channel chn = channel_left;
 
-	pr_err("%s: state %d\n", __func__, state);
+	pr_info("%s: state %d\n", __func__, state);
 
 	if ((p_tas256x->mb_mute) && (state == TAS256X_POWER_ACTIVE))
 		state = TAS256X_POWER_MUTE;
@@ -1124,7 +1124,7 @@ int tas256x_iv_vbat_slot_config(struct tas256x_priv *p_tas256x,
 {
 	int n_result = 0;
 
-	pr_err("%s: mn_slot_width %d\n", __func__, mn_slot_width);
+	pr_debug("%s: mn_slot_width %d\n", __func__, mn_slot_width);
 
 	if (p_tas256x->mn_fmt_mode == 2) { /*TDM Mode*/
 		if (p_tas256x->mn_channels == 2) {
@@ -1315,7 +1315,7 @@ int tas256x_set_bitwidth(struct tas256x_priv *p_tas256x,
 	if (bitwidth == 24)
 		slot_width_tmp = 32;
 
-	pr_err("%s: bitwidth %d stream %d\n", __func__, bitwidth, stream);
+	pr_info("%s: bitwidth %d stream %d\n", __func__, bitwidth, stream);
 
 	if (stream == TAS256X_STREAM_PLAYBACK) {
 		n_result |= tas256x_rx_set_bitwidth(p_tas256x, bitwidth,

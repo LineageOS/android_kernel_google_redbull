@@ -21,9 +21,6 @@
  */
 
 #if IS_ENABLED(CONFIG_TAS256X_CODEC)
-#ifdef CONFIG_DYNAMIC_DEBUG
-#define DEBUG 5
-#endif
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -453,7 +450,7 @@ static int tas256x_hw_params(struct snd_pcm_substream *substream,
 		n_result = tas256x_set_bitwidth(p_tas256x,
 				bitwidth, substream->stream);
 		if (n_result < 0) {
-			dev_info(plat_data->dev, "set bitwidth failed, %d\n",
+			dev_err(plat_data->dev, "set bitwidth failed, %d\n",
 				n_result);
 			goto ret;
 		}
@@ -476,7 +473,7 @@ static int tas256x_hw_params(struct snd_pcm_substream *substream,
 		n_result = tas256x_set_bitwidth(p_tas256x,
 				bitwidth, substream->stream);
 		if (n_result < 0) {
-			dev_info(plat_data->dev, "set bitwidth failed, %d\n",
+			dev_err(plat_data->dev, "set bitwidth failed, %d\n",
 				n_result);
 			goto ret;
 		}
@@ -524,22 +521,22 @@ static int tas256x_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF:
-		dev_info(plat_data->dev, "INV format: NBNF\n");
+		dev_dbg(plat_data->dev, "INV format: NBNF\n");
 		asi_cfg_1 |= 0;
 		asi_cfg_2 |= 0;
 		break;
 	case SND_SOC_DAIFMT_IB_NF:
-		dev_info(plat_data->dev, "INV format: IBNF\n");
+		dev_dbg(plat_data->dev, "INV format: IBNF\n");
 		asi_cfg_1 |= 1;
 		asi_cfg_2 |= 0;
 		break;
 	case SND_SOC_DAIFMT_NB_IF:
-		dev_info(plat_data->dev, "INV format: NBIF\n");
+		dev_dbg(plat_data->dev, "INV format: NBIF\n");
 		asi_cfg_1 |= 0;
 		asi_cfg_2 |= 1;
 		break;
 	case SND_SOC_DAIFMT_IB_IF:
-		dev_info(plat_data->dev, "INV format: IBIF\n");
+		dev_dbg(plat_data->dev, "INV format: IBIF\n");
 		asi_cfg_1 |= 1;
 		asi_cfg_2 |= 1;
 		break;
@@ -551,23 +548,23 @@ static int tas256x_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case (SND_SOC_DAIFMT_I2S):
 		tdm_rx_start_slot = 1;
-		dev_info(plat_data->dev, " SND_SOC_DAIFMT_I2S tdm_rx_start_slot = 1\n");
+		dev_dbg(plat_data->dev, " SND_SOC_DAIFMT_I2S tdm_rx_start_slot = 1\n");
 		break;
 	case (SND_SOC_DAIFMT_DSP_A):
 		tdm_rx_start_slot = 1;
-		dev_info(plat_data->dev, "SND_SOC_DAIFMT_DSP_A tdm_rx_start_slot =1\n");
+		dev_dbg(plat_data->dev, "SND_SOC_DAIFMT_DSP_A tdm_rx_start_slot =1\n");
 		break;
 	case (SND_SOC_DAIFMT_DSP_B):
 		tdm_rx_start_slot = 0;
-		dev_info(plat_data->dev, "SND_SOC_DAIFMT_DSP_B tdm_rx_start_slot = 0\n");
+		dev_dbg(plat_data->dev, "SND_SOC_DAIFMT_DSP_B tdm_rx_start_slot = 0\n");
 		break;
 	case (SND_SOC_DAIFMT_LEFT_J):
 		tdm_rx_start_slot = 0;
-		dev_info(plat_data->dev, "SND_SOC_DAIFMT_LEFT_J tdm_rx_start_slot = 0\n");
+		dev_dbg(plat_data->dev, "SND_SOC_DAIFMT_LEFT_J tdm_rx_start_slot = 0\n");
 		break;
 	default:
-	dev_err(plat_data->dev, "DAI Format is not found, fmt=0x%x\n", fmt);
-	ret = -EINVAL;
+		dev_err(plat_data->dev, "DAI Format is not found, fmt=0x%x\n", fmt);
+		ret = -EINVAL;
 		break;
 	}
 

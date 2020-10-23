@@ -20,9 +20,6 @@
  * =============================================================================
  */
 
-#ifdef CONFIG_DYNAMIC_DEBUG
-#define DEBUG
-#endif
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
