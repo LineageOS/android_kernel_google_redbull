@@ -2928,6 +2928,9 @@ END:	/* here start the reporting phase, assembling the data to send in the
 	}
 
 	if (byte_call == 0) {
+		/* keep for ito_max_val array */
+		if (funcToTest[0] == CMD_ITOTEST)
+			size += (ARRAY_SIZE(ito_max_val) * sizeof(u16));
 		size *= 2;
 		size += 2;	/* add \n and \0 (terminator char) */
 	} else {
@@ -3020,17 +3023,19 @@ END:	/* here start the reporting phase, assembling the data to send in the
 						size - index, "%02X",
 						(u8)frameMS.header.sense_node);
 
-				index += scnprintf(&driver_test_buff[index],
-						size - index,
-						"%02X%02X",
-						(ito_max_val[0] & 0xFF00) >> 8,
-						ito_max_val[0] & 0xFF);
+				if (funcToTest[0] == CMD_ITOTEST) {
+					index += scnprintf(&driver_test_buff[index],
+							size - index,
+							"%02X%02X",
+							(ito_max_val[0] & 0xFF00) >> 8,
+							ito_max_val[0] & 0xFF);
 
-				index += scnprintf(&driver_test_buff[index],
-						size - index,
-						"%02X%02X",
-						(ito_max_val[1] & 0xFF00) >> 8,
-						ito_max_val[1] & 0xFF);
+					index += scnprintf(&driver_test_buff[index],
+							size - index,
+							"%02X%02X",
+							(ito_max_val[1] & 0xFF00) >> 8,
+							ito_max_val[1] & 0xFF);
+				}
 
 				for (j = 0; j < frameMS.node_data_size; j++) {
 					index += scnprintf(

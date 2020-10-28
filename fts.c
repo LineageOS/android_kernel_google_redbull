@@ -2262,12 +2262,14 @@ END:
 			index += scnprintf(all_strbuff + index, size - index,
 					   "%3d",
 					   (u8)frameMS.header.sense_node);
-			index += scnprintf(all_strbuff + index,
-					size - index, " %d ",
-					ito_max_val[0]);
-			index += scnprintf(all_strbuff + index,
-					size - index, "%d ",
-					ito_max_val[1]);
+			if (typeOfCommand[0] == 0x01) {
+				index += scnprintf(all_strbuff + index,
+						size - index, " %d ",
+						ito_max_val[0]);
+				index += scnprintf(all_strbuff + index,
+						size - index, "%d ",
+						ito_max_val[1]);
+			}
 #else
 			index += scnprintf(all_strbuff + index,
 					   size - index, "%02X",
@@ -2276,18 +2278,19 @@ END:
 			index += scnprintf(all_strbuff + index,
 					   size - index, "%02X",
 					   (u8)frameMS.header.sense_node);
+			if (typeOfCommand[0] == 0x01) {
+				index += scnprintf(all_strbuff + index,
+						size - index,
+						"%02X%02X",
+						(ito_max_val[0] & 0xFF00) >> 8,
+						ito_max_val[0] & 0xFF);
 
-			index += scnprintf(all_strbuff + index,
-					size - index,
-					"%02X%02X",
-					(ito_max_val[0] & 0xFF00) >> 8,
-					ito_max_val[0] & 0xFF);
-
-			index += scnprintf(all_strbuff + index,
-					size - index,
-					"%02X%02X",
-					(ito_max_val[1] & 0xFF00) >> 8,
-					ito_max_val[1] & 0xFF);
+				index += scnprintf(all_strbuff + index,
+						size - index,
+						"%02X%02X",
+						(ito_max_val[1] & 0xFF00) >> 8,
+						ito_max_val[1] & 0xFF);
+			}
 #endif
 
 			for (j = 0; j < frameMS.node_data_size; j++) {
