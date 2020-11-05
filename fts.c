@@ -4897,6 +4897,25 @@ static void fts_fw_update_auto(struct work_struct *work)
 	fts_set_bus_ref(info, FTS_BUS_REF_FW_UPDATE, false);
 }
 
+/**
+ *  Save the golden MS raw data to the touch IC if firmware has separated it
+ *  from the PI process.
+ */
+int save_golden_ms_raw(struct fts_ts_info *info)
+{
+	u8 cmd[3] = {0xC0, 0x01, 0x01};
+	int ret = 0;
+
+	ret = fts_write(cmd, 3);
+	if (ret < 0)
+		pr_err("Fail to save golden MS raw, ret = %d", ret);
+	else {
+		mdelay(150);	/* Time to secure the saving process (90 ms) */
+		pr_info("Golden MS raw is saved!");
+	}
+	return ret;
+}
+
 /* TODO: define if need to do the full mp at the boot */
 /**
   *	Execute the initialization of the IC (supporting a retry mechanism),
@@ -4916,6 +4935,9 @@ static int fts_chip_initialization(struct fts_ts_info *info, int init_type)
 	for (retry = 0; retry < RETRY_INIT_BOOT; retry++) {
 #ifndef COMPUTE_INIT_METHOD
 		ret2 = production_test_initialization(init_type);
+		if (ret2 == OK &&
+		    info->board->separate_save_golden_ms_raw_cmd)
+			save_golden_ms_raw(info);
 #else
 		ret2 = production_test_main(limits_file, 1, init_type, &tests,
 			MP_FLAG_BOOT);
@@ -5986,6 +6008,12 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 	if (of_property_read_bool(np, "st,disable-auto-fw-update")) {
 		bdata->auto_fw_update = false;
 		pr_info("Automatic firmware update disabled\n");
+	}
+
+	bdata->separate_save_golden_ms_raw_cmd = false;
+	if (of_property_read_bool(np, "st,save-golden-ms-raw")) {
+		bdata->separate_save_golden_ms_raw_cmd = true;
+		pr_info("Separate \"Save Golden MS Raw\" command from PI command.\n");
 	}
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
