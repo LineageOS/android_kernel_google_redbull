@@ -109,16 +109,21 @@ static int get_calibrated_re_tcalib(uint32_t *rdc_fix, uint32_t *tv_fix, int cha
 }
 #endif /*CONFIG_SET_RE_IN_KERNEL*/
 
-void tas25xx_algo_set_inactive (void)
+void tas25xx_algo_set_inactive(void)
 {
-	pr_debug("[TI-SmartPA:%s]", __func__);
 	atomic_set(&algo_active, 0);
+	s_tas_smartamp_enable = 0;
+
+	pr_info("[TI-SmartPA:%s] algo disabled..", __func__);
+
+	bin_file_set_profile_id(0);
+	s_calib_test_flag = 0;
 }
 
-void tas25xx_algo_set_active (void)
+void tas25xx_algo_set_active(void)
 {
 	atomic_set(&algo_active, 1);
-	schedule_delayed_work (&query_tisa_algo_wrk, msecs_to_jiffies(1000));
+	schedule_delayed_work(&query_tisa_algo_wrk, msecs_to_jiffies(1000));
 }
 
 static void query_tisa_algo(struct work_struct *wrk)
@@ -575,11 +580,6 @@ static int tas25xx_smartamp_enable_set_kbin(struct snd_kcontrol *pKcontrol,
 
 	s_tas_smartamp_enable = user_data;
 	if (s_tas_smartamp_enable == 0) {
-
-		tas25xx_algo_set_inactive();
-
-		bin_file_set_profile_id(0);
-		s_calib_test_flag = 0;
 		pr_info("TI-SmartPA: %s: Disable called\n", __func__);
 		return 0;
 	}
