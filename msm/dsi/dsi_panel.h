@@ -169,6 +169,9 @@ struct dynamic_elvss_data {
 
 	/* Store the elvss data */
 	struct elvss_range nodes[DYNAMIC_ELVSS_RANGE_MAX];
+
+	/* Enable/Disable dynamic elvss */
+	bool enable_dynamic_elvss;
 };
 
 struct hbm_data {
@@ -597,6 +600,8 @@ int dsi_panel_bl_parse_config(struct device *parent,
 			      struct dsi_backlight_config *bl);
 int dsi_panel_bl_brightness_handoff(struct dsi_panel *panel);
 void dsi_panel_bl_debugfs_init(struct dentry *parent, struct dsi_panel *panel);
+void dsi_panel_bl_elvss_debugfs_init(struct dentry *parent,
+				     struct dsi_panel *panel);
 
 /* Set/get high brightness mode */
 int dsi_panel_update_hbm(struct dsi_panel *panel, enum hbm_mode_type);

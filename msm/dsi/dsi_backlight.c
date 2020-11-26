@@ -472,7 +472,10 @@ static void dsi_panel_bl_elvss_update(struct backlight_device *bd,
 	if (!elvss)
 		return;
 
-	mode = dsi_panel_get_elvss_mode(bd);
+	if (elvss->enable_dynamic_elvss == false)
+		mode = ELVSS_MODE_DISABLE;
+	else
+		mode = dsi_panel_get_elvss_mode(bd);
 
 	if ((mode == elvss->cur_mode) && (mode != ELVSS_MODE_ENABLE))
 		return;
@@ -577,6 +580,17 @@ static void dsi_panel_bl_elvss_free(struct device *dev,
 	bl->elvss = NULL;
 }
 
+void dsi_panel_debugfs_create_dynamic_elvss(struct dentry *parent,
+					struct dynamic_elvss_data *elvss)
+{
+	if (!parent || !elvss)
+		return;
+
+	debugfs_create_bool("enable_dynamic_elvss", 0600,
+			parent, &elvss->enable_dynamic_elvss);
+
+}
+
 static int dsi_panel_bl_parse_dynamic_elvss(struct device *parent,
 		struct dsi_backlight_config *bl, struct device_node *of_node)
 {
@@ -638,6 +652,8 @@ static int dsi_panel_bl_parse_dynamic_elvss(struct device *parent,
 	}
 
 	dsi_panel_bl_elvss_clean_flag(bl);
+
+	bl->elvss->enable_dynamic_elvss = true;
 
 	return 0;
 
@@ -1356,6 +1372,20 @@ void dsi_panel_debugfs_create_binned_bl(struct dentry *parent,
 
 error:
 	debugfs_remove_recursive(r);
+}
+
+void dsi_panel_bl_elvss_debugfs_init(struct dentry *parent,
+				      struct dsi_panel *panel)
+{
+	struct dsi_backlight_config *bl = &panel->bl_config;
+	struct dynamic_elvss_data *elvss;
+
+	if (!parent || !bl->elvss)
+		return;
+
+	elvss = bl->elvss;
+
+	dsi_panel_debugfs_create_dynamic_elvss(parent, elvss);
 }
 
 static int dsi_panel_binned_lp_register(struct dsi_backlight_config *bl)
