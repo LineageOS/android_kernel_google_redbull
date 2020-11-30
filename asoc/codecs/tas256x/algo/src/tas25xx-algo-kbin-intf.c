@@ -31,6 +31,10 @@
 #include "tas25xx-algo-bin-utils.h"
 #include "tas25xx-algo-intf.h"
 
+#if IS_ENABLED(CONFIG_SND_SOC_CODEC_DETECT)
+#include <linux/codec-misc.h>
+#endif
+
 #define POISON_VAL		0xDEADDEAD
 #define MAX_STRING		(300)
 #define QFORMAT19		19
@@ -60,6 +64,13 @@ static uint8_t trans_val_to_user_i(uint32_t val, uint8_t qformat)
 {
 	return ((val * 100) >> qformat) / 100;
 }
+
+#if IS_ENABLED(CONFIG_SND_SOC_CODEC_DETECT)
+static double trans_val_to_double(uint32_t val, uint8_t qformat)
+{
+	return (double)((double)(val) / (double)((unsigned int)1 << (qformat)));
+}
+#endif
 
 #ifdef CONFIG_SET_RE_IN_KERNEL
 static int get_calibrated_re_tcalib(uint32_t *rdc_fix, uint32_t *tv_fix, int channel_count)
@@ -134,6 +145,9 @@ static void query_tisa_algo(struct work_struct *wrk)
 	int ret;
 	int temp;
 	int re_l = 0, re_r = 0;
+#if IS_ENABLED(CONFIG_SND_SOC_CODEC_DETECT)
+	int scale = 100000;
+#endif
 
 	ret = bin_file_get_custom_value_by_idx(0, &sleep_ms);
 	if (ret) {
@@ -149,11 +163,15 @@ static void query_tisa_algo(struct work_struct *wrk)
 
 		temp = s_allow_dsp_query;
 		s_allow_dsp_query = 1;
-		re_l = tas25xx_get_re_common (CHANNEL0);
-		re_r = tas25xx_get_re_common (CHANNEL1);
+		re_l = tas25xx_get_re_common(CHANNEL0);
+		re_r = tas25xx_get_re_common(CHANNEL1);
 		s_allow_dsp_query = temp;
 
-		pr_info("[TI-SmartPA:%s] Re value is %02d.%02d (%d), %02d.%02d (%d) \n", __func__,
+#if IS_ENABLED(CONFIG_SND_SOC_CODEC_DETECT)
+		codec_misc_amp_put(0, trans_val_to_double(re_l, QFORMAT19) * scale);
+		codec_misc_amp_put(1, trans_val_to_double(re_r, QFORMAT19) * scale);
+#endif
+		pr_debug("[TI-SmartPA:%s] Re value is %02d.%02d (%d), %02d.%02d (%d) \n", __func__,
 			(int32_t)trans_val_to_user_i(re_l, QFORMAT19), (int32_t)trans_val_to_user_m(re_l, QFORMAT19), re_l,
 			(int32_t)trans_val_to_user_i(re_r, QFORMAT19), (int32_t)trans_val_to_user_m(re_r, QFORMAT19), re_r);
 
