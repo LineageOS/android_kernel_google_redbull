@@ -10677,8 +10677,7 @@ static void hdd_cfg_params_init(struct hdd_context *hdd_ctx)
 		      cfg_get(psoc, CFG_DBS_SCAN_SELECTION),
 		      CFG_DBS_SCAN_PARAM_LENGTH);
 	config->inform_bss_rssi_raw = cfg_get(psoc, CFG_INFORM_BSS_RSSI_RAW);
-	// config->mac_provision = cfg_get(psoc, CFG_ENABLE_MAC_PROVISION);
-	config->mac_provision = 0; // TODO: b/161105289 Temporarily disable it due to HW early stage
+	config->mac_provision = cfg_get(psoc, CFG_ENABLE_MAC_PROVISION);
 	config->provisioned_intf_pool =
 				cfg_get(psoc, CFG_PROVISION_INTERFACE_POOL);
 	config->derived_intf_pool = cfg_get(psoc, CFG_DERIVED_INTERFACE_POOL);
