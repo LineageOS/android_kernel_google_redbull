@@ -53,22 +53,23 @@ static int tas25xx_get_re_common(int channel);
 struct device *tas25xx_algo_get_device(void);
 
 /*Max value supported is 2^8*/
-static uint8_t trans_val_to_user_m(uint32_t val, uint8_t qformat)
+static int trans_val_to_user_m(int val, int qformat, int scale)
 {
-	uint32_t ret = (uint32_t)(((long long)val * 1000) >> qformat) % 1000;
-	return (uint8_t)(ret / 10);
+	int ret = (int)(((long long)val * scale) >> qformat) % scale;
+	return ret;
 }
 
 /*Max value supported is 2^8*/
-static uint8_t trans_val_to_user_i(uint32_t val, uint8_t qformat)
+static int trans_val_to_user_i(int val, int qformat)
 {
 	return ((val * 100) >> qformat) / 100;
 }
 
 #if IS_ENABLED(CONFIG_SND_SOC_CODEC_DETECT)
-static double trans_val_to_double(uint32_t val, uint8_t qformat)
+static int trans_val_to_int(int val, int scale, int qformat)
 {
-	return (double)((double)(val) / (double)((unsigned int)1 << (qformat)));
+	return trans_val_to_user_i(val, qformat) * scale +
+		trans_val_to_user_m(val, qformat, scale);
 }
 #endif
 
@@ -168,12 +169,12 @@ static void query_tisa_algo(struct work_struct *wrk)
 		s_allow_dsp_query = temp;
 
 #if IS_ENABLED(CONFIG_SND_SOC_CODEC_DETECT)
-		codec_misc_amp_put(0, trans_val_to_double(re_l, QFORMAT19) * scale);
-		codec_misc_amp_put(1, trans_val_to_double(re_r, QFORMAT19) * scale);
+		codec_misc_amp_put(0, (long)trans_val_to_int(re_l, scale, QFORMAT19));
+		codec_misc_amp_put(1, (long)trans_val_to_int(re_r, scale, QFORMAT19));
 #endif
 		pr_debug("[TI-SmartPA:%s] Re value is %02d.%02d (%d), %02d.%02d (%d) \n", __func__,
-			(int32_t)trans_val_to_user_i(re_l, QFORMAT19), (int32_t)trans_val_to_user_m(re_l, QFORMAT19), re_l,
-			(int32_t)trans_val_to_user_i(re_r, QFORMAT19), (int32_t)trans_val_to_user_m(re_r, QFORMAT19), re_r);
+			(int32_t)trans_val_to_user_i(re_l, QFORMAT19), (int32_t)trans_val_to_user_m(re_l, QFORMAT19, 100), re_l,
+			(int32_t)trans_val_to_user_i(re_r, QFORMAT19), (int32_t)trans_val_to_user_m(re_r, QFORMAT19, 100), re_r);
 
 		usleep_range (sleep_us, sleep_us_max);
 	}
