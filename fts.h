@@ -301,6 +301,7 @@ struct fts_hw_platform_data {
 	u32 initial_panel_index;
 	u32 *force_pi_cfg_ver;
 	u32 offload_id;
+	u8 fw_grip_area;
 };
 
 /* Bits for the bus reference mask */
