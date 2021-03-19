@@ -4096,12 +4096,27 @@ int fts_enable_grip(struct fts_ts_info *info, bool enable)
 		{0xC0, 0x03, 0x10, 0xFF, 0x03, 0x00, 0x00, 0x00, 0x00};
 	static uint8_t disable_cmd[] =
 		{0xC0, 0x03, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	static uint8_t left_size_cmd[] =
+		{0xC0, 0x03, 0x20, 0x00/* unit: px */, 0x00, 0x00, 0x00, 0x5F, 0x09};
+	static uint8_t right_size_cmd[] =
+		{0xC0, 0x03, 0x21, 0x00/* unit: px */, 0x00, 0x00, 0x00, 0x5F, 0x09};
 	int res;
 
-	if (enable)
+	if (enable) {
+		if (info->board->fw_grip_area) {
+			left_size_cmd[3] = info->board->fw_grip_area;
+			right_size_cmd[3] = info->board->fw_grip_area;
+			res = fts_write(left_size_cmd, sizeof(left_size_cmd));
+			res = fts_write(right_size_cmd, sizeof(right_size_cmd));
+		}
 		res = fts_write(enable_cmd, sizeof(enable_cmd));
-	else
+	} else {
+		if (info->board->fw_grip_area) {
+			res = fts_write(left_size_cmd, sizeof(left_size_cmd));
+			res = fts_write(right_size_cmd, sizeof(right_size_cmd));
+		}
 		res = fts_write(disable_cmd, sizeof(disable_cmd));
+	}
 	if (res < 0)
 		pr_err("%s: fts_write failed with res=%d.\n", __func__,
 		       res);
@@ -6064,6 +6079,10 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 		    offload_id[0], offload_id[1], offload_id[2], offload_id[3],
 		    bdata->offload_id);
 	}
+
+	if (of_property_read_u8(np, "st,grip_area", &bdata->fw_grip_area))
+		bdata->fw_grip_area = 0;
+	pr_info("Firmware grip area = %u\n", bdata->fw_grip_area);
 
 	return OK;
 }
