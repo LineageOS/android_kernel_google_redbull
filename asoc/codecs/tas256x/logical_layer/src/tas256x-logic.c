@@ -1078,7 +1078,6 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 					p_tas256x->mb_power_up = false;
 					p_tas256x->mn_power_state =
 						TAS256X_POWER_SHUTDOWN;
-					msleep(20);
 				}
 			} else {
 				if (chn & (i+1)) {
@@ -1090,7 +1089,6 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 					p_tas256x->mb_power_up = false;
 					p_tas256x->mn_power_state =
 						TAS256X_POWER_SHUTDOWN;
-					msleep(20);
 					/*Mask interrupt for TDM*/
 					n_result = tas256x_interrupt_enable(p_tas256x,
 						0/*Disable*/,
@@ -1099,6 +1097,9 @@ int tas256x_set_power_state(struct tas256x_priv *p_tas256x,
 			}
 		}
 		p_tas256x->enable_irq(p_tas256x, false);
+		/*Device Shutdown need 16ms after shutdown writes are made*/
+		usleep_range(16000, 16100);
+
 #if IS_ENABLED(CONFIG_TAS256X_REGBIN_PARSER)
 		/*set p_tas256x->profile_cfg_id by tinymix*/
 		tas256x_select_cfg_blk(p_tas256x, p_tas256x->profile_cfg_id,

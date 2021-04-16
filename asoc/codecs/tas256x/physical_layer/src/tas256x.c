@@ -281,7 +281,7 @@ int tas256x_set_power_up(struct tas256x_priv *p_tas256x,
 		TAS256X_POWERCONTROL_OPERATIONALMODE10_ACTIVE);
 
 	/* Let Power on the device */
-	msleep(2);
+	usleep_range(2000, 2100);
 	/* Enable Comparator Hysteresis */
 	n_result = p_tas256x->update_bits(p_tas256x, chn,
 		TAS256X_MISC_CLASSD,
@@ -319,9 +319,6 @@ int tas256x_set_power_shutdown(struct tas256x_priv *p_tas256x,
 		TAS256X_POWERCONTROL,
 		TAS256X_POWERCONTROL_OPERATIONALMODE10_MASK,
 		TAS256X_POWERCONTROL_OPERATIONALMODE10_SHUTDOWN);
-
-	/*Device Shutdown need 20ms after shutdown writes are made*/
-	msleep(20);
 
 	return n_result;
 }
