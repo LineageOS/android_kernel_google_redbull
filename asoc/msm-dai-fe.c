@@ -2105,7 +2105,7 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 		.name = "QUIN_TDM_RX_0_HOSTLESS",
 		.probe = fe_dai_probe,
 	},
-#if IS_ENABLED(CONFIG_SND_SOC_CS35L41)
+#if IS_ENABLED(CONFIG_SND_SOC_CS35L41) || IS_ENABLED(CONFIG_SND_SOC_TAS256X)
 	{
 		.capture = {
 			.stream_name = "Quinary TDM0 Hostless Capture",
