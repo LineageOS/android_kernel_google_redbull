@@ -436,6 +436,232 @@ static u32 dsi_backlight_calculate(struct dsi_backlight_config *bl,
 	return bl_lvl;
 }
 
+static void dsi_panel_bl_elvss_clean_flag(struct dsi_backlight_config *bl)
+{
+	struct dynamic_elvss_data *elvss = bl->elvss;
+
+	if (!bl || !elvss)
+		return;
+
+	elvss->cur_elvss_range = DYNAMIC_ELVSS_RANGE_MAX;
+	elvss->cur_mode = ELVSS_MODE_INIT;
+	pr_debug("ELVSS: Set variables to default value\n");
+}
+
+static enum elvss_mode dsi_panel_get_elvss_mode(struct backlight_device *bd)
+{
+	struct dsi_backlight_config *bl = bl_get_data(bd);
+	struct dsi_panel *panel = container_of(bl, struct dsi_panel, bl_config);
+
+	if ((is_on_mode(bd->props.state) && dsi_panel_get_hbm(panel)) ||
+		(is_lp_mode(bd->props.state)))
+		return ELVSS_MODE_DISABLE;
+	else
+		return ELVSS_MODE_ENABLE;
+}
+
+static void dsi_panel_bl_elvss_update(struct backlight_device *bd,
+				      enum ctrl_elvss elvss_update)
+{
+	struct dsi_backlight_config *bl = bl_get_data(bd);
+	struct dsi_panel *panel = container_of(bl, struct dsi_panel, bl_config);
+	struct dynamic_elvss_data *elvss = bl->elvss;
+	int rc, i;
+	enum elvss_mode mode;
+
+	if (!elvss)
+		return;
+
+	if (elvss->enable_dynamic_elvss == false)
+		mode = ELVSS_MODE_DISABLE;
+	else
+		mode = dsi_panel_get_elvss_mode(bd);
+
+	if ((mode == elvss->cur_mode) && (mode != ELVSS_MODE_ENABLE))
+		return;
+
+	switch (mode) {
+	case ELVSS_MODE_DISABLE:
+		pr_debug("ELVSS: Disable Dynamic ELVSS\n");
+
+		rc = dsi_panel_cmd_set_transfer(panel,
+				&elvss->disable_dynamic_elvss_cmd);
+		if (rc)
+			pr_err("ELVSS: [%s] failed to send disable dynamic ELVSS cmd, rc=%d\n",
+				panel->name, rc);
+
+		elvss->cur_elvss_range = DYNAMIC_ELVSS_RANGE_MAX;
+		elvss->cur_mode = ELVSS_MODE_DISABLE;
+
+		break;
+	case ELVSS_MODE_ENABLE:
+		for (i = 0; i < elvss->num_ranges; i++) {
+			if (bd->props.brightness <=
+				elvss->nodes[i].brightness_threshold)
+				break;
+		}
+
+		if (i == elvss->num_ranges) {
+			pr_warn("ELVSS: brightness is larger than brightness_threshold\n");
+			return;
+		}
+
+		if ((elvss_update == ELVSS_PRE_UPDATE &&
+			 elvss->cur_elvss_range < i) ||
+			(elvss_update == ELVSS_POST_UPDATE &&
+			 elvss->cur_elvss_range > i)) {
+			pr_debug("ELVSS: Update: ori_range=%d, new_range=%d, ctrl_elvss_update:%d\n",
+				elvss->cur_elvss_range, i, elvss_update);
+
+			rc = dsi_panel_cmd_set_transfer(panel,
+				&elvss->nodes[i].elvss_cmd);
+			if (rc)
+				pr_err("ELVSS: [%s] failed to send elvss_cmd, rc=%d\n",
+					   panel->name, rc);
+
+			elvss->cur_elvss_range = i;
+			elvss->cur_mode = ELVSS_MODE_ENABLE;
+		}
+		break;
+	default:
+		pr_warn("ELVSS: Invalid Mode\n");
+		break;
+	}
+}
+
+static int dsi_panel_bl_parse_elvss_node(struct device *parent,
+	struct dsi_backlight_config *bl, struct device_node *np,
+	struct elvss_range *node)
+{
+	int rc;
+	u32 val;
+
+	rc = of_property_read_u32(np,
+		"google,dsi-elvss-range-brightness-threshold", &val);
+	if (rc) {
+		pr_err("Unable to parse dsi-elvss-range-brightness-threshold\n");
+		return rc;
+	}
+	if (val > bl->brightness_max_level) {
+		pr_err("elvss-range-brightness-threshold exceeds max userspace brightness\n");
+		return -EINVAL;
+	}
+	node->brightness_threshold = val;
+
+	rc = dsi_panel_parse_dt_cmd_set(np,
+		"google,dsi-elvss-range-update-command",
+		"google,dsi-elvss-range-commands-state", &node->elvss_cmd);
+	if (rc) {
+		pr_warn("Unable to parse google,dsi-elvss-range-update-command\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static void dsi_panel_bl_elvss_free(struct device *dev,
+	struct dsi_backlight_config *bl)
+{
+	u32 i;
+	struct dynamic_elvss_data *elvss = bl->elvss;
+
+	if (!elvss)
+		return;
+
+	dsi_panel_destroy_cmd_packets(&elvss->disable_dynamic_elvss_cmd);
+	dsi_panel_dealloc_cmd_packets(&elvss->disable_dynamic_elvss_cmd);
+
+	for (i = 0; i < elvss->num_ranges; i++) {
+		dsi_panel_destroy_cmd_packets(&elvss->nodes[i].elvss_cmd);
+		dsi_panel_dealloc_cmd_packets(&elvss->nodes[i].elvss_cmd);
+	}
+
+	devm_kfree(dev, elvss);
+	bl->elvss = NULL;
+}
+
+void dsi_panel_debugfs_create_dynamic_elvss(struct dentry *parent,
+					struct dynamic_elvss_data *elvss)
+{
+	if (!parent || !elvss)
+		return;
+
+	debugfs_create_bool("enable_dynamic_elvss", 0600,
+			parent, &elvss->enable_dynamic_elvss);
+
+}
+
+static int dsi_panel_bl_parse_dynamic_elvss(struct device *parent,
+		struct dsi_backlight_config *bl, struct device_node *of_node)
+{
+	struct device_node *elvss_ranges_np;
+	struct device_node *child_np;
+	u32 rc, i = 0, num_ranges;
+
+	elvss_ranges_np = of_get_child_by_name(of_node, "google,elvss-ranges");
+	if (!elvss_ranges_np) {
+		pr_info("ELVSS modes list not found\n");
+		return 0;
+	}
+
+	num_ranges = of_get_child_count(elvss_ranges_np);
+	if (!num_ranges || (num_ranges > DYNAMIC_ELVSS_RANGE_MAX)) {
+		pr_err("Invalid number of ELVSS modes: %d\n", num_ranges);
+		return -EINVAL;
+	}
+
+	bl->elvss = devm_kzalloc(parent, sizeof(struct dynamic_elvss_data),
+							 GFP_KERNEL);
+	if (bl->elvss == NULL) {
+		pr_err("Failed to allocate memory for dynamic elvss data\n");
+		return -ENOMEM;
+	}
+
+	rc = dsi_panel_parse_dt_cmd_set(elvss_ranges_np,
+		"google,dsi-elvss-range-off-command",
+		"google,dsi-elvss-range-commands-state",
+		&bl->elvss->disable_dynamic_elvss_cmd);
+	if (rc) {
+		devm_kfree(parent, bl->elvss);
+		bl->elvss = NULL;
+		pr_err("Unable to parse dsi-elvss-range-off-command\n");
+		return -EINVAL;
+	}
+
+	bl->elvss->num_ranges = num_ranges;
+
+	for_each_child_of_node(elvss_ranges_np, child_np) {
+		rc = dsi_panel_bl_parse_elvss_node(parent, bl,
+			child_np, bl->elvss->nodes + i);
+		if (rc) {
+			bl->elvss->num_ranges = i;
+			pr_err("Failed to parse ELVSS range %d\n", i);
+			goto exit_free;
+		}
+		i++;
+	}
+
+	for (i = 0; i < num_ranges - 1; i++) {
+		/* Make sure ranges are sorted and not overlapping */
+		if (bl->elvss->nodes[i].brightness_threshold >=
+				bl->elvss->nodes[i + 1].brightness_threshold) {
+			pr_err("ELVSS nodes must be sorted by elvss-brightness-threshold\n");
+			rc = -EINVAL;
+			goto exit_free;
+		}
+	}
+
+	dsi_panel_bl_elvss_clean_flag(bl);
+
+	bl->elvss->enable_dynamic_elvss = true;
+
+	return 0;
+
+exit_free:
+	dsi_panel_bl_elvss_free(parent, bl);
+	return rc;
+}
+
 static int dsi_backlight_update_status(struct backlight_device *bd)
 {
 	struct dsi_backlight_config *bl = bl_get_data(bd);
@@ -467,11 +693,16 @@ static int dsi_backlight_update_status(struct backlight_device *bd)
 		pr_info("req:%d bl:%d state:0x%x\n",
 			bd->props.brightness, bl_lvl, bd->props.state);
 
+		dsi_panel_bl_elvss_update(bd, ELVSS_PRE_UPDATE);
+
 		rc = bl->update_bl(bl, bl_lvl);
 		if (rc) {
 			pr_err("unable to set backlight (%d)\n", rc);
 			goto done;
 		}
+
+		dsi_panel_bl_elvss_update(bd, ELVSS_POST_UPDATE);
+
 		bl->bl_update_pending = false;
 		need_notify = true;
 		if (bl->bl_notifier && is_on_mode(bd->props.state)
@@ -963,6 +1194,16 @@ int dsi_backlight_late_dpms(struct dsi_backlight_config *bl, int power_mode)
 			FB_BLANK_UNBLANK;
 	bd->props.state = state;
 
+	/* The dynamic elvss register will be restored to
+	 * the default OTP's value automatically when the
+	 * panel is power off(HW behavior). We need to set
+	 * the variables to default value for this kind of
+	 * case. When the device comes back from panel off
+	 * to other modes, the dynamic elvss will be updated.
+	 */
+	if (bd->props.power == FB_BLANK_POWERDOWN)
+		dsi_panel_bl_elvss_clean_flag(bl);
+
 	mutex_unlock(&bl->state_lock);
 	backlight_update_status(bd);
 	sysfs_notify(&bd->dev.kobj, NULL, "state");
@@ -1131,6 +1372,20 @@ void dsi_panel_debugfs_create_binned_bl(struct dentry *parent,
 
 error:
 	debugfs_remove_recursive(r);
+}
+
+void dsi_panel_bl_elvss_debugfs_init(struct dentry *parent,
+				      struct dsi_panel *panel)
+{
+	struct dsi_backlight_config *bl = &panel->bl_config;
+	struct dynamic_elvss_data *elvss;
+
+	if (!parent || !bl->elvss)
+		return;
+
+	elvss = bl->elvss;
+
+	dsi_panel_debugfs_create_dynamic_elvss(parent, elvss);
 }
 
 static int dsi_panel_binned_lp_register(struct dsi_backlight_config *bl)
@@ -1350,6 +1605,7 @@ int dsi_panel_bl_unregister(struct dsi_panel *panel)
 		sysfs_remove_groups(&bl->bl_device->dev.kobj, bl_device_groups);
 
 	dsi_panel_bl_hbm_free(panel->parent, bl);
+	dsi_panel_bl_elvss_free(panel->parent, bl);
 	dsi_panel_bl_notifier_free(panel->parent, bl);
 
 	return 0;
@@ -1810,6 +2066,11 @@ int dsi_panel_bl_parse_config(struct device *parent, struct dsi_backlight_config
 	rc = dsi_panel_bl_parse_hbm(parent, bl, utils->data);
 	if (rc)
 		pr_err("[%s] error while parsing high brightness mode (hbm) details, rc=%d\n",
+			panel->name, rc);
+
+	rc = dsi_panel_bl_parse_dynamic_elvss(parent, bl, utils->data);
+	if (rc)
+		pr_err("[%s] error while parsing dynamic elvss details, rc=%d\n",
 			panel->name, rc);
 
 	rc = dsi_panel_bl_parse_ranges(parent, bl, utils->data);
