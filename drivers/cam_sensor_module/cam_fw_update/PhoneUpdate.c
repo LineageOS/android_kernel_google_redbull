@@ -785,9 +785,8 @@ UINT_8	WrGyroOffsetTbl( stGyroOffsetTbl *pTbl )
 		return( ans );
 	}
 
-	UlMAT0[ 10 ] = (UINT_32)((UINT_32)(pTbl->StAccel.SlOffsetX & 0xFFFF0000) | (UINT_32)(pTbl->StAngle.SlOffsetX) >> 16);
-	UlMAT0[ 11 ] = (UINT_32)((UINT_32)(pTbl->StAccel.SlOffsetY & 0xFFFF0000) | (UINT_32)(pTbl->StAngle.SlOffsetY) >> 16);
-	UlMAT0[ 12 ] = (UINT_32)((UINT_32)(pTbl->StAccel.SlOffsetZ & 0xFFFF0000) | (UINT_32)(pTbl->StAngle.SlOffsetZ) >> 16);
+	UlMAT0[ 10 ] = (UINT_32)((UINT_32)(UlMAT0[ 10 ] & 0xFFFF0000) | (UINT_32)(pTbl->StAngle.SlOffsetX) >> 16);
+	UlMAT0[ 11 ] = (UINT_32)((UINT_32)(UlMAT0[ 11 ] & 0xFFFF0000) | (UINT_32)(pTbl->StAngle.SlOffsetY) >> 16);
 
 	UsCkVal = MkInfMATsum( UlMAT0 ) ;
 	UlMAT0[ 63 ] &= (UINT_32)0xFFFF0000 ;
