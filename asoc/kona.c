@@ -186,6 +186,16 @@ enum {
 	AFE_LOOPBACK_TX_IDX = 0,
 	AFE_LOOPBACK_TX_IDX_MAX,
 };
+
+enum {
+	CODEC_USE_UNDEFINE = -1,
+	CODEC_USE_CS35L41 = 0,
+	CODEC_USE_TAS256X,
+};
+
+#define STR_CS35L41 "cs35l41"
+#define STR_TAS256X "tas256x"
+
 struct msm_asoc_mach_data {
 	struct snd_info_entry *codec_root;
 	int usbc_en2_gpio; /* used by gpio driver API */
@@ -4770,6 +4780,7 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+	struct snd_soc_dai **codec_dais = rtd->codec_dais;
 	int ret = 0;
 	int slot_width = TDM_SLOT_WIDTH_BITS;
 	int channels, slots;
@@ -4778,12 +4789,14 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 	struct tdm_dev_config *config;
 	struct msm_asoc_mach_data *pdata = NULL;
 	unsigned int path_dir = 0, interface = 0, channel_interface = 0;
-
-#if IS_ENABLED(CONFIG_SND_SOC_CS35L41)
 	int i = 0;
-	struct snd_soc_dai **codec_dais = rtd->codec_dais;
 	int QUIN_TDM_MAX_SLOTS = 4;
-#endif
+	int codec_use = CODEC_USE_UNDEFINE;
+
+	if (strstr(rtd->codec_dai->name, STR_CS35L41))
+		codec_use = CODEC_USE_CS35L41;
+	else if (strstr(rtd->codec_dai->name, STR_TAS256X))
+		codec_use = CODEC_USE_TAS256X;
 
 	pr_debug("%s: dai id = 0x%x\n", __func__, cpu_dai->id);
 
@@ -4829,22 +4842,23 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 		channels = tdm_rx_cfg[interface][channel_interface].channels;
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-#if IS_ENABLED(CONFIG_SND_SOC_CS35L41)
-		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX) {
-			slots = QUIN_TDM_MAX_SLOTS;
-			if (channels > slots) {
-				pr_info("%s: Incorrect QUIN TDM RX ch: %d",
-					__func__, channels);
-				channels = slots;
-				tdm_rx_cfg[interface][channel_interface] \
-				.channels = slots;
+		if (codec_use == CODEC_USE_CS35L41) {
+			if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX) {
+				slots = QUIN_TDM_MAX_SLOTS;
+				if (channels > slots) {
+					pr_info("%s: Incorrect QUIN TDM RX ch: %d",
+						__func__, channels);
+					channels = slots;
+					tdm_rx_cfg[interface][channel_interface] \
+					.channels = slots;
+				}
 			}
 		}
-#endif
-#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
-		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX)
-			slots = 4;
-#endif
+		if (codec_use == CODEC_USE_TAS256X) {
+			if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX)
+				slots = QUIN_TDM_MAX_SLOTS;
+		}
+
 		/*2 slot config - bits 0 and 1 set for the first two slots */
 		slot_mask = 0x0000FFFF >> (16 - slots);
 
@@ -4868,44 +4882,45 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 				__func__, ret);
 			goto end;
 		}
-#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
-		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX) {
-			ret = snd_soc_dai_set_tdm_slot(codec_dai, 0, slot_mask,
-				slots, slot_width);
-			if (ret < 0) {
-				pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
-					__func__, ret);
-				goto end;
-			}
+		if (codec_use == CODEC_USE_TAS256X) {
+			if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX) {
+				ret = snd_soc_dai_set_tdm_slot(codec_dai, 0, slot_mask,
+					slots, slot_width);
+				if (ret < 0) {
+					pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
+						__func__, ret);
+					goto end;
+				}
 
-			ret = snd_soc_dai_set_fmt(codec_dai,
-				SND_SOC_DAIFMT_CBS_CFS |
-				SND_SOC_DAIFMT_NB_NF |
-				SND_SOC_DAIFMT_DSP_A);
-			if (ret < 0) {
-				pr_err("%s: failed to set rx fmt for codec, err:%d\n",
-					__func__, ret);
-				goto end;
+				ret = snd_soc_dai_set_fmt(codec_dai,
+					SND_SOC_DAIFMT_CBS_CFS |
+					SND_SOC_DAIFMT_NB_NF |
+					SND_SOC_DAIFMT_DSP_A);
+				if (ret < 0) {
+					pr_err("%s: failed to set rx fmt for codec, err:%d\n",
+						__func__, ret);
+					goto end;
+				}
 			}
 		}
-#endif
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
-#if IS_ENABLED(CONFIG_SND_SOC_CS35L41)
-		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX) {
-			slots = QUIN_TDM_MAX_SLOTS;
-			if (channels > slots) {
-				pr_info("%s: Incorrect QUIN TDM TX ch: %d",
-					__func__, channels);
-				channels = slots;
-				tdm_tx_cfg[interface][channel_interface] \
-				.channels = slots;
+		if (codec_use == CODEC_USE_CS35L41) {
+			if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX) {
+				slots = QUIN_TDM_MAX_SLOTS;
+				if (channels > slots) {
+					pr_info("%s: Incorrect QUIN TDM TX ch: %d",
+						__func__, channels);
+					channels = slots;
+					tdm_tx_cfg[interface][channel_interface] \
+					.channels = slots;
+				}
 			}
 		}
-#endif
-#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
-		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX)
-			slots = 4;
-#endif
+
+		if (codec_use == CODEC_USE_TAS256X) {
+			if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX)
+				slots = QUIN_TDM_MAX_SLOTS;
+		}
 		/*2 slot config - bits 0 and 1 set for the first two slots */
 		slot_mask = 0x0000FFFF >> (16 - slots);
 
@@ -4933,27 +4948,27 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 				__func__, ret);
 			goto end;
 		}
-#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
-		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX) {
-			ret = snd_soc_dai_set_tdm_slot(codec_dai, slot_mask, 0,
-				slots, slot_width);
-			if (ret < 0) {
-				pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
-					__func__, ret);
-				goto end;
-			}
+		if (codec_use == CODEC_USE_TAS256X) {
+			if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX) {
+				ret = snd_soc_dai_set_tdm_slot(codec_dai, slot_mask, 0,
+					slots, slot_width);
+				if (ret < 0) {
+					pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
+						__func__, ret);
+					goto end;
+				}
 
-			ret = snd_soc_dai_set_fmt(codec_dai,
-				SND_SOC_DAIFMT_CBS_CFS |
-				SND_SOC_DAIFMT_NB_NF |
-				SND_SOC_DAIFMT_DSP_A);
-			if (ret < 0) {
-				pr_err("%s: failed to set rx fmt for codec, err:%d\n",
-					__func__, ret);
-				goto end;
+				ret = snd_soc_dai_set_fmt(codec_dai,
+					SND_SOC_DAIFMT_CBS_CFS |
+					SND_SOC_DAIFMT_NB_NF |
+					SND_SOC_DAIFMT_DSP_A);
+				if (ret < 0) {
+					pr_err("%s: failed to set rx fmt for codec, err:%d\n",
+						__func__, ret);
+					goto end;
+				}
 			}
 		}
-#endif
 	} else {
 		ret = -EINVAL;
 		pr_err("%s: invalid use case, err:%d\n",
@@ -5001,37 +5016,37 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 		}
 	}
 
-#if IS_ENABLED(CONFIG_SND_SOC_CS35L41)
-	for (i = 0; i < rtd->num_codecs; i++) {
-		if (codec_dais[i] == NULL ||
-			cpu_dai->id != AFE_PORT_ID_QUINARY_TDM_RX)
-			continue;
+	if (codec_use == CODEC_USE_CS35L41) {
+		for (i = 0; i < rtd->num_codecs; i++) {
+			if (codec_dais[i] == NULL ||
+				cpu_dai->id != AFE_PORT_ID_QUINARY_TDM_RX)
+				continue;
 
-		ret = snd_soc_dai_set_fmt(codec_dais[i],
-				SND_SOC_DAIFMT_DSP_A |
-				SND_SOC_DAIFMT_CBS_CFS |
-				SND_SOC_DAIFMT_NB_NF);
+			ret = snd_soc_dai_set_fmt(codec_dais[i],
+					SND_SOC_DAIFMT_DSP_A |
+					SND_SOC_DAIFMT_CBS_CFS |
+					SND_SOC_DAIFMT_NB_NF);
 
-		if (ret != 0)
-			dev_err(codec_dai->dev,
-				"Failed to set dai format for %s, ret = %d\n",
-				codec_dai->name, ret);
+			if (ret != 0)
+				dev_err(codec_dai->dev,
+					"Failed to set dai format for %s, ret = %d\n",
+					codec_dai->name, ret);
 
-		ret = snd_soc_dai_set_sysclk(codec_dais[i], 0, clk_freq,
-				SND_SOC_CLOCK_IN);
-		if (ret != 0)
-			dev_err(codec_dai->dev,
-				"Failed to set dai clock %u, ret = %d\n",
-				clk_freq, ret);
+			ret = snd_soc_dai_set_sysclk(codec_dais[i], 0, clk_freq,
+					SND_SOC_CLOCK_IN);
+			if (ret != 0)
+				dev_err(codec_dai->dev,
+					"Failed to set dai clock %u, ret = %d\n",
+					clk_freq, ret);
 
-		ret = snd_soc_component_set_sysclk(codec_dais[i]->component,
-					0, 0, clk_freq, SND_SOC_CLOCK_IN);
-		if (ret != 0)
-			dev_err(codec_dai->dev,
-				"Failed to set codec clock %u, ret = %d\n",
-				clk_freq, ret);
+			ret = snd_soc_component_set_sysclk(codec_dais[i]->component,
+						0, 0, clk_freq, SND_SOC_CLOCK_IN);
+			if (ret != 0)
+				dev_err(codec_dai->dev,
+					"Failed to set codec clock %u, ret = %d\n",
+					clk_freq, ret);
+		}
 	}
-#endif
 
 end:
 	return ret;
