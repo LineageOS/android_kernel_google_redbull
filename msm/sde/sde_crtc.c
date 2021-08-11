@@ -255,6 +255,13 @@ static ssize_t early_wakeup_store(struct device *device,
 	return count;
 }
 
+static ssize_t early_wakeup_show(struct device *device,
+		struct device_attribute *attr, char *buf)
+{
+
+    return 0;
+}
+
 static ssize_t fps_periodicity_ms_store(struct device *device,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -441,7 +448,7 @@ static ssize_t retire_frame_event_show(struct device *device,
 static DEVICE_ATTR_RO(vsync_event);
 static DEVICE_ATTR_RO(measured_fps);
 static DEVICE_ATTR_RW(fps_periodicity_ms);
-static DEVICE_ATTR_WO(early_wakeup);
+static DEVICE_ATTR_RW(early_wakeup);
 static DEVICE_ATTR_RO(retire_frame_event);
 
 static struct attribute *sde_crtc_dev_attrs[] = {
