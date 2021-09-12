@@ -1,0 +1,43 @@
+config SND_SOC_TAS256X
+    tristate "SND_SOC_TAS256X"
+    default n
+
+config TAS256X_REGMAP
+    depends on SND_SOC_TAS256X
+    bool "TAS256X_REGMAP"
+    default y
+
+config TAS256X_CODEC
+    depends on SND_SOC_TAS256X
+    bool "TAS256X_CODEC"
+    default y
+
+config TAS256X_MISC
+    depends on SND_SOC_TAS256X
+    bool "TAS256X_MISC"
+    default n
+
+config TAS256X_REGBIN_PARSER
+    depends on SND_SOC_TAS256X
+    bool "TAS256X_REGBIN_PARSER"
+    default y
+
+config TAS25XX_ALGO
+    depends on SND_SOC_TAS256X
+    bool "TAS25XX_ALGO"
+    default n
+
+config TAS25XX_ALGO_STEREO
+    depends on TAS25XX_ALGO
+    bool "TAS25XX_ALGO_STEREO"
+    default y
+
+config TISA_KBIN_INTF
+    depends on SND_SOC_TAS256X
+    bool "TISA_KBIN_INTF"
+    default n
+
+config PLATFORM_QCOM
+    depends on SND_SOC_TAS256X
+    bool "PLATFORM_QCOM"
+    default n
