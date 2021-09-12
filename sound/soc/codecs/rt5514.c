@@ -1441,8 +1441,15 @@ static int rt5514_mem_test_get(struct snd_kcontrol *kcontrol,
 		return 0;
 	}
 
-	regmap_multi_reg_write(rt5514->i2c_regmap,
-		rt5514_i2c_patch, rt5514->i2c_patch_size);
+	if (rt5514->gpiod_reset) {
+		gpiod_set_value(rt5514->gpiod_reset, 0);
+		usleep_range(1000, 2000);
+		gpiod_set_value(rt5514->gpiod_reset, 1);
+	} else {
+		regmap_multi_reg_write(rt5514->i2c_regmap,
+			rt5514_i2c_patch, rt5514->i2c_patch_size);
+	}
+
 	rt5514_enable_dsp_prepare(rt5514);
 
 	buf1 = kmalloc(0xb8000, GFP_KERNEL);
@@ -1492,8 +1499,15 @@ static int rt5514_mem_test_get(struct snd_kcontrol *kcontrol,
 	dev_info(component->dev, "Test done\n");
 
 failed:
-	regmap_multi_reg_write(rt5514->i2c_regmap,
-		rt5514_i2c_patch, rt5514->i2c_patch_size);
+	if (rt5514->gpiod_reset) {
+		gpiod_set_value(rt5514->gpiod_reset, 0);
+		usleep_range(1000, 2000);
+		gpiod_set_value(rt5514->gpiod_reset, 1);
+	} else {
+		regmap_multi_reg_write(rt5514->i2c_regmap,
+			rt5514_i2c_patch, rt5514->i2c_patch_size);
+	}
+
 	rt5514_dsp_enable(rt5514, false, true);
 	rt5514_spi_request_switch(SPI_SWITCH_MASK_CMD, 0);
 	ucontrol->value.integer.value[0] = !!ret;
@@ -1544,8 +1558,10 @@ static int rt5514_firmware_version_get(struct snd_kcontrol *kcontrol,
 	}
 
 	if (rt5514->dsp_enabled | rt5514->dsp_adc_enabled) {
+		rt5514_spi_request_switch(SPI_SWITCH_MASK_CMD, 1);
 		rt5514_spi_burst_read(rt5514->fw_addr[0] + 0x128,
 			(u8 *)&dsp_mem, sizeof(struct _dsp_mem_st));
+		rt5514_spi_request_switch(SPI_SWITCH_MASK_CMD, 0);
 		dev_info(component->dev, "IRAM: %d DRAM: %d\n",
 			dsp_mem.iram, dsp_mem.dram);
 	}
@@ -1572,9 +1588,12 @@ static int rt5514_hotword_dsp_identifier_get(struct snd_kcontrol *kcontrol,
 
 	regmap_read(rt5514->i2c_regmap, 0x18002fd4, &identifier_addr);
 
-	if ((identifier_addr & 0xffe00000) == 0x4fe00000)
+	if ((identifier_addr & 0xffe00000) == 0x4fe00000) {
+		rt5514_spi_request_switch(SPI_SWITCH_MASK_CMD, 1);
 		rt5514_spi_burst_read(identifier_addr, (u8 *)&uuid,
 			DSP_IDENTIFIER_SIZE);
+		rt5514_spi_request_switch(SPI_SWITCH_MASK_CMD, 0);
+	}
 
 	if (copy_to_user(bytes, &uuid, DSP_IDENTIFIER_SIZE)) {
 		dev_warn(component->dev, "%s(), copy_to_user fail\n", __func__);
@@ -1814,18 +1833,18 @@ static int rt5514_dmic_event(struct snd_soc_dapm_widget *w,
 	struct rt5514_priv *rt5514 = snd_soc_component_get_drvdata(component);
 
 	if (event & SND_SOC_DAPM_PRE_PMU) {
-		usleep_range(85000, 85100);
-
+		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER0_CTRL1,
+			RT5514_AD_AD_MUTE, RT5514_AD_AD_MUTE);
+		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER0_CTRL2,
+			RT5514_AD_AD_MUTE, RT5514_AD_AD_MUTE);
+		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER1_CTRL1,
+			RT5514_AD_AD_MUTE, RT5514_AD_AD_MUTE);
+		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER1_CTRL2,
+			RT5514_AD_AD_MUTE, RT5514_AD_AD_MUTE);
 		/* un-mute all dmic path after power up */
 		cancel_delayed_work_sync(&rt5514->unmute_work);
-		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER0_CTRL1,
-			RT5514_AD_AD_MUTE, 0x0);
-		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER0_CTRL2,
-			RT5514_AD_AD_MUTE, 0x0);
-		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER1_CTRL1,
-			RT5514_AD_AD_MUTE, 0x0);
-		regmap_update_bits(rt5514->regmap, RT5514_DOWNFILTER1_CTRL2,
-			RT5514_AD_AD_MUTE, 0x0);
+		schedule_delayed_work(&rt5514->unmute_work,
+			msecs_to_jiffies(UNMUTE_SWITCH_MS));
 	}
 
 	return 0;
@@ -1939,12 +1958,13 @@ static const struct snd_soc_dapm_widget rt5514_dapm_widgets[] = {
 	SND_SOC_DAPM_ADC("Stereo2 ADC MIXR", NULL, SND_SOC_NOPM, 0, 0),
 
 	/* ADC PGA */
-	SND_SOC_DAPM_PGA("Stereo1 ADC MIX", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_PGA("Stereo2 ADC MIX", SND_SOC_NOPM, 0, 0, NULL, 0),
+	SND_SOC_DAPM_PGA_E("Stereo1 ADC MIX", SND_SOC_NOPM, 0, 0, NULL, 0,
+		rt5514_dmic_event, SND_SOC_DAPM_PRE_PMU),
+	SND_SOC_DAPM_PGA_E("Stereo2 ADC MIX", SND_SOC_NOPM, 0, 0, NULL, 0,
+		rt5514_dmic_event, SND_SOC_DAPM_PRE_PMU),
 
 	/* Audio Interface */
-	SND_SOC_DAPM_AIF_OUT_E("AIF1TX", "AIF1 Capture", 0, SND_SOC_NOPM, 0, 0,
-		rt5514_dmic_event, SND_SOC_DAPM_PRE_PMU),
+	SND_SOC_DAPM_AIF_OUT("AIF1TX", "AIF1 Capture", 0, SND_SOC_NOPM, 0, 0)
 };
 
 static const struct snd_soc_dapm_route rt5514_dapm_routes[] = {

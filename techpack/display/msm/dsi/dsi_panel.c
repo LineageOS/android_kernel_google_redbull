@@ -3938,6 +3938,7 @@ void dsi_panel_debugfs_init(struct dsi_panel *panel, struct dentry *dir)
 
 	dsi_panel_debugfs_create_cmdsets_from_list(dir, panel);
 	dsi_panel_bl_debugfs_init(dir, panel);
+	dsi_panel_bl_elvss_debugfs_init(dir, panel);
 
 	return;
 

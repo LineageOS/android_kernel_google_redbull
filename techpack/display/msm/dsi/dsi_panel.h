@@ -29,6 +29,7 @@
 
 #define DSI_MODE_MAX 32
 #define HBM_RANGE_MAX 4
+#define DYNAMIC_ELVSS_RANGE_MAX 10
 
 #define BL_STATE_STANDBY	BL_CORE_FBBLANK
 #define BL_STATE_LP		BL_CORE_LP1
@@ -136,6 +137,43 @@ struct hbm_range {
 	u32 num_dimming_frames;
 };
 
+enum elvss_mode {
+	ELVSS_MODE_INIT = 0,
+	ELVSS_MODE_ENABLE,
+	ELVSS_MODE_DISABLE
+};
+
+enum ctrl_elvss {
+	ELVSS_PRE_UPDATE = 0,
+	ELVSS_POST_UPDATE
+};
+
+struct elvss_range {
+	/* Use brightness threshold to update the command */
+	u32 brightness_threshold;
+
+	/* Command to be sent to the panel to adjust the ELVSS power */
+	struct dsi_panel_cmd_set elvss_cmd;
+};
+
+struct dynamic_elvss_data {
+	/* Record the current elvss range */
+	u32 cur_elvss_range;
+	/* Number of elvss ranges */
+	u32 num_ranges;
+	/* Different status*/
+	enum elvss_mode cur_mode;
+
+	/* Command to disable dynamic elvss */
+	struct dsi_panel_cmd_set disable_dynamic_elvss_cmd;
+
+	/* Store the elvss data */
+	struct elvss_range nodes[DYNAMIC_ELVSS_RANGE_MAX];
+
+	/* Enable/Disable dynamic elvss */
+	bool enable_dynamic_elvss;
+};
+
 struct hbm_data {
 	/* IRC register address */
 	u8 irc_addr;
@@ -198,6 +236,7 @@ struct dsi_backlight_config {
 	struct mutex state_lock;
 
 	struct bl_notifier_data *bl_notifier;
+	struct dynamic_elvss_data *elvss;
 	struct hbm_data *hbm;
 
 	int en_gpio;
@@ -561,6 +600,8 @@ int dsi_panel_bl_parse_config(struct device *parent,
 			      struct dsi_backlight_config *bl);
 int dsi_panel_bl_brightness_handoff(struct dsi_panel *panel);
 void dsi_panel_bl_debugfs_init(struct dentry *parent, struct dsi_panel *panel);
+void dsi_panel_bl_elvss_debugfs_init(struct dentry *parent,
+				     struct dsi_panel *panel);
 
 /* Set/get high brightness mode */
 int dsi_panel_update_hbm(struct dsi_panel *panel, enum hbm_mode_type);
