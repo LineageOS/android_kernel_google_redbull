@@ -4575,12 +4575,17 @@ int dsi_panel_update_pps(struct dsi_panel *panel)
 
 	set = &priv_info->cmd_sets[DSI_CMD_SET_PPS];
 
-	dsi_dsc_create_pps_buf_cmd(&priv_info->dsc, panel->dsc_pps_cmd, 0);
-	rc = dsi_panel_create_cmd_packets(panel->dsc_pps_cmd,
-					  DSI_CMD_PPS_SIZE, 1, set->cmds);
-	if (rc) {
-		DSI_ERR("failed to create cmd packets, rc=%d\n", rc);
-		goto error;
+	if (!priv_info->pps_created) {
+		dsi_dsc_create_pps_buf_cmd(&priv_info->dsc, panel->dsc_pps_cmd, 0);
+		rc = dsi_panel_create_cmd_packets(panel->dsc_pps_cmd,
+						DSI_CMD_PPS_SIZE, 1, set->cmds);
+		if (rc) {
+			DSI_ERR("failed to create cmd packets, rc=%d\n", rc);
+			goto error;
+		}
+		else {
+			priv_info->pps_created = true;
+		}
 	}
 
 	rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_PPS);
@@ -4589,7 +4594,6 @@ int dsi_panel_update_pps(struct dsi_panel *panel)
 			panel->name, rc);
 	}
 
-	dsi_panel_destroy_cmd_packets(set);
 error:
 	mutex_unlock(&panel->panel_lock);
 	return rc;
