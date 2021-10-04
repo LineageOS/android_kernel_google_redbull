@@ -1131,10 +1131,19 @@ int sec_ts_read_raw_data(struct sec_ts_data *ts,
 		struct sec_cmd_data *sec, struct sec_ts_test_mode *mode);
 u8 sec_ts_run_cal_check(struct sec_ts_data *ts);
 
-#if (1)//!defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_SEC_TS_DEBUG)
 int sec_ts_raw_device_init(struct sec_ts_data *ts);
-#endif
 void sec_ts_raw_device_exit(struct sec_ts_data *ts);
+#else
+static inline int sec_ts_raw_device_init(struct sec_ts_data *ts)
+{
+	return 0;
+}
+
+static inline void sec_ts_raw_device_exit(struct sec_ts_data *ts)
+{
+}
+#endif
 
 extern struct class *sec_class;
 
