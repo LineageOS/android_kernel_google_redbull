@@ -4841,6 +4841,10 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 			}
 		}
 #endif
+#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
+		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX)
+			slots = 4;
+#endif
 		/*2 slot config - bits 0 and 1 set for the first two slots */
 		slot_mask = 0x0000FFFF >> (16 - slots);
 
@@ -4864,6 +4868,27 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 				__func__, ret);
 			goto end;
 		}
+#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
+		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_RX) {
+			ret = snd_soc_dai_set_tdm_slot(codec_dai, 0, slot_mask,
+				slots, slot_width);
+			if (ret < 0) {
+				pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
+					__func__, ret);
+				goto end;
+			}
+
+			ret = snd_soc_dai_set_fmt(codec_dai,
+				SND_SOC_DAIFMT_CBS_CFS |
+				SND_SOC_DAIFMT_NB_NF |
+				SND_SOC_DAIFMT_DSP_A);
+			if (ret < 0) {
+				pr_err("%s: failed to set rx fmt for codec, err:%d\n",
+					__func__, ret);
+				goto end;
+			}
+		}
+#endif
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 #if IS_ENABLED(CONFIG_SND_SOC_CS35L41)
 		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX) {
@@ -4876,6 +4901,10 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 				.channels = slots;
 			}
 		}
+#endif
+#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
+		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX)
+			slots = 4;
 #endif
 		/*2 slot config - bits 0 and 1 set for the first two slots */
 		slot_mask = 0x0000FFFF >> (16 - slots);
@@ -4904,6 +4933,27 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 				__func__, ret);
 			goto end;
 		}
+#if IS_ENABLED(CONFIG_SND_SOC_TAS256X)
+		if (cpu_dai->id == AFE_PORT_ID_QUINARY_TDM_TX) {
+			ret = snd_soc_dai_set_tdm_slot(codec_dai, slot_mask, 0,
+				slots, slot_width);
+			if (ret < 0) {
+				pr_err("%s: failed to set tdm tx slot for codec, err:%d\n",
+					__func__, ret);
+				goto end;
+			}
+
+			ret = snd_soc_dai_set_fmt(codec_dai,
+				SND_SOC_DAIFMT_CBS_CFS |
+				SND_SOC_DAIFMT_NB_NF |
+				SND_SOC_DAIFMT_DSP_A);
+			if (ret < 0) {
+				pr_err("%s: failed to set rx fmt for codec, err:%d\n",
+					__func__, ret);
+				goto end;
+			}
+		}
+#endif
 	} else {
 		ret = -EINVAL;
 		pr_err("%s: invalid use case, err:%d\n",
@@ -7425,7 +7475,7 @@ static struct snd_soc_dai_link msm_tdm_fe_dai_link[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
 	},
-#if IS_ENABLED(CONFIG_SND_SOC_CS35L41)
+#if IS_ENABLED(CONFIG_SND_SOC_CS35L41) || IS_ENABLED(CONFIG_SND_SOC_TAS256X)
 	{
 		.name = "Quinary TDM TX 0 Hostless",
 		.stream_name = "Quinary TDM TX 0 Hostless",
