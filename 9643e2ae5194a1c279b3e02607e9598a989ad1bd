@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": true,
+      "key": {
+        "uuid": "4036b83e_814c1d6e",
+        "filename": "techpack/audio/Android.bp",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 18205
+      },
+      "writtenOn": "2021-12-13T10:56:27Z",
+      "side": 1,
+      "message": "remove",
+      "revId": "9643e2ae5194a1c279b3e02607e9598a989ad1bd",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
