@@ -1,6 +1,23 @@
 {
   "comments": [
     {
+      "unresolved": false,
+      "key": {
+        "uuid": "15366d8f_6e9895b5",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3917
+      },
+      "writtenOn": "2022-01-09T20:49:56Z",
+      "side": 1,
+      "message": "works when tech pack/audio/android.bp removed as stated above",
+      "revId": "9643e2ae5194a1c279b3e02607e9598a989ad1bd",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
       "unresolved": true,
       "key": {
         "uuid": "4036b83e_814c1d6e",
