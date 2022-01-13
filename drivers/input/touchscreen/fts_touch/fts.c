@@ -234,7 +234,7 @@ void release_all_touches(struct fts_ts_info *info)
   * error) \n
   * } = end byte
   */
-static ssize_t fts_fwupdate_store(struct device *dev,
+static ssize_t fwupdate_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -273,7 +273,7 @@ static ssize_t fts_fwupdate_store(struct device *dev,
 	return count;
 }
 
-static ssize_t fts_fwupdate_show(struct device *dev,
+static ssize_t fwupdate_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -290,7 +290,7 @@ static ssize_t fts_fwupdate_show(struct device *dev,
   * (first the less significant byte) \n
   * cat appid	show the external release version of the FW running in the IC
   */
-static ssize_t fts_appid_show(struct device *dev, struct device_attribute *attr,
+static ssize_t appid_show(struct device *dev, struct device_attribute *attr,
 			      char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -348,7 +348,7 @@ static ssize_t fts_appid_show(struct device *dev, struct device_attribute *attr,
   * } = end byte
   * @see fts_mode_handler()
   */
-static ssize_t fts_mode_active_show(struct device *dev,
+static ssize_t mode_active_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -362,7 +362,7 @@ static ssize_t fts_mode_active_show(struct device *dev,
   * cat fw_file_test			show on the kernel log external release
   * of the FW stored in the fw file/header file
   */
-static ssize_t fts_fw_test_show(struct device *dev,
+static ssize_t fw_file_test_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -387,7 +387,7 @@ static ssize_t fts_fw_test_show(struct device *dev,
 	return 0;
 }
 
-static ssize_t fts_status_show(struct device *dev,
+static ssize_t status_show(struct device *dev,
 			       struct device_attribute *attr, char *buf)
 {
 	struct fts_ts_info *info = dev_get_drvdata(dev);
@@ -652,7 +652,7 @@ int check_feature_feasibility(struct fts_ts_info *info, unsigned int feature)
   * no error) \n
   * } = end byte
   */
-static ssize_t fts_feature_enable_store(struct device *dev,
+static ssize_t feature_enable_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -750,7 +750,7 @@ static ssize_t fts_feature_enable_store(struct device *dev,
 
 
 
-static ssize_t fts_feature_enable_show(struct device *dev,
+static ssize_t feature_enable_show(struct device *dev,
 				       struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -784,7 +784,7 @@ static ssize_t fts_feature_enable_show(struct device *dev,
   * info->grip_enabled (1 = enabled; 0= disabled) \n
   * } = end byte
   */
-static ssize_t fts_grip_mode_show(struct device *dev,
+static ssize_t grip_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -802,7 +802,7 @@ static ssize_t fts_grip_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_grip_mode_store(struct device *dev,
+static ssize_t grip_mode_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -864,7 +864,7 @@ static ssize_t fts_grip_mode_store(struct device *dev,
   * info->charger_enabled (>0 = enabled; 0= disabled) \n
   * } = end byte
   */
-static ssize_t fts_charger_mode_show(struct device *dev,
+static ssize_t charger_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -880,7 +880,7 @@ static ssize_t fts_charger_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_charger_mode_store(struct device *dev,
+static ssize_t charger_mode_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -942,7 +942,7 @@ static ssize_t fts_charger_mode_store(struct device *dev,
   * info->glove_enabled (1 = enabled; 0= disabled) \n
   * } = end byte
   */
-static ssize_t fts_glove_mode_show(struct device *dev,
+static ssize_t glove_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -958,7 +958,7 @@ static ssize_t fts_glove_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_glove_mode_store(struct device *dev,
+static ssize_t glove_mode_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1029,7 +1029,7 @@ static ssize_t fts_glove_mode_store(struct device *dev,
   * the cover can be handled also using a notifier, in this case the body of
   * these functions should be copied in the notifier callback
   */
-static ssize_t fts_cover_mode_show(struct device *dev,
+static ssize_t cover_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -1045,7 +1045,7 @@ static ssize_t fts_cover_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_cover_mode_store(struct device *dev,
+static ssize_t cover_mode_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1105,7 +1105,7 @@ static ssize_t fts_cover_mode_store(struct device *dev,
   * (1 = enabled; 0= disabled)\n
   * } = end byte
   */
-static ssize_t fts_stylus_mode_show(struct device *dev,
+static ssize_t stylus_mode_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
@@ -1121,7 +1121,7 @@ static ssize_t fts_stylus_mode_show(struct device *dev,
 }
 
 
-static ssize_t fts_stylus_mode_store(struct device *dev,
+static ssize_t stylus_mode_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1193,7 +1193,7 @@ static ssize_t fts_stylus_mode_store(struct device *dev,
   * (1 = enabled; 0= disabled)\n
   * } = end byte
   */
-static ssize_t fts_gesture_mask_show(struct device *dev,
+static ssize_t gesture_mask_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0, res, temp;
@@ -1218,14 +1218,14 @@ static ssize_t fts_gesture_mask_show(struct device *dev,
 			res = ERROR_OP_NOT_ALLOW;
 
 		if (res < OK)
-			pr_err("fts_gesture_mask_store: ERROR %08X\n", res);
+			pr_err("%s: ERROR %08X\n", __func__, res);
 	}
 	res |= check_feature_feasibility(info, FEAT_SEL_GESTURE);
 	temp = isAnyGestureActive();
 	if (res >= OK || temp == FEAT_DISABLE)
 		info->gesture_enabled = temp;
 
-	pr_info("fts_gesture_mask_store: Gesture Enabled = %d\n",
+	pr_info("%s: Gesture Enabled = %d\n", __func__,
 		 info->gesture_enabled);
 
 	count += scnprintf(buf + count,
@@ -1237,7 +1237,7 @@ static ssize_t fts_gesture_mask_show(struct device *dev,
 }
 
 
-static ssize_t fts_gesture_mask_store(struct device *dev,
+static ssize_t gesture_mask_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1246,8 +1246,8 @@ static ssize_t fts_gesture_mask_store(struct device *dev,
 	unsigned int temp;
 
 	if ((count + 1) / 3 > GESTURE_MASK_SIZE + 1) {
-		pr_err("fts_gesture_mask_store: Number of bytes of parameter wrong! %zu > (enable/disable + %d )\n",
-			(count + 1) / 3, GESTURE_MASK_SIZE);
+		pr_err("%s: Number of bytes of parameter wrong! %zu > (enable/disable + %d )\n",
+			__func__, (count + 1) / 3, GESTURE_MASK_SIZE);
 		mask[0] = 0;
 	} else {
 		mask[0] = ((count + 1) / 3) - 1;
@@ -1299,13 +1299,13 @@ static ssize_t fts_gesture_mask_store(struct device *dev,
   * (1 = enabled; 0= disabled)\n
   * } = end byte
   */
-static ssize_t fts_gesture_mask_show(struct device *dev,
+static ssize_t gesture_mask_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	int count = 0;
 	struct fts_ts_info *info = dev_get_drvdata(dev);
 
-	pr_info("fts_gesture_mask_show: gesture_enabled = %d\n",
+	pr_info("%s: gesture_enabled = %d\n", __func__,
 		info->gesture_enabled);
 
 	count += scnprintf(buf + count,
@@ -1317,7 +1317,7 @@ static ssize_t fts_gesture_mask_show(struct device *dev,
 }
 
 
-static ssize_t fts_gesture_mask_store(struct device *dev,
+static ssize_t gesture_mask_store(struct device *dev,
 				struct device_attribute *attr, const char *buf,
 				size_t count)
 {
@@ -1335,8 +1335,8 @@ static ssize_t fts_gesture_mask_store(struct device *dev,
 	}
 
 	if ((count + 1) / 3 < 2 || (count + 1) / 3 > GESTURE_MASK_SIZE + 1) {
-		pr_err("fts_gesture_mask_store: Number of bytes of parameter wrong! %d < or > (enable/disable + at least one gestureID or max %d bytes)\n",
-			(count + 1) / 3, GESTURE_MASK_SIZE);
+		pr_err("%s: Number of bytes of parameter wrong! %d < or > (enable/disable + at least one gestureID or max %d bytes)\n",
+			__func__, (count + 1) / 3, GESTURE_MASK_SIZE);
 		mask[0] = 0;
 	} else {
 		memset(mask, 0, GESTURE_MASK_SIZE + 2);
@@ -1378,7 +1378,7 @@ END:
 			res = ERROR_OP_NOT_ALLOW;
 
 		if (res < OK)
-			pr_err("fts_gesture_mask_store: ERROR %08X\n", res);
+			pr_err("%s: ERROR %08X\n", __func__, res);
 	}
 
 	res = check_feature_feasibility(info, FEAT_SEL_GESTURE);
@@ -1409,7 +1409,7 @@ END:
   * \n
   * } = end byte
   */
-static ssize_t fts_gesture_coordinates_show(struct device *dev,
+static ssize_t gesture_coordinates_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
@@ -1524,7 +1524,7 @@ static void touchsim_work(struct work_struct *work)
 	struct fts_ts_info *info  = container_of(touchsim,
 						struct fts_ts_info,
 						touchsim);
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	ktime_t timestamp = ktime_get();
 #endif
 
@@ -1543,7 +1543,7 @@ static void touchsim_work(struct work_struct *work)
 
 	input_sync(info->input_dev);
 
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	heatmap_read(&info->v4l2, ktime_to_ns(timestamp));
 #endif
 
@@ -1637,7 +1637,7 @@ static int touchsim_stop(struct fts_touchsim *touchsim)
   *  1 = test running.
   *  0 = test not running.
   */
-static ssize_t fts_touch_simulation_show(struct device *dev,
+static ssize_t touchsim_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
@@ -1653,7 +1653,7 @@ static ssize_t fts_touch_simulation_show(struct device *dev,
   *  1 = start the test if not already running.
   *  0 = stop the test if its running.
   */
-static ssize_t fts_touch_simulation_store(struct device *dev,
+static ssize_t touchsim_store(struct device *dev,
 					  struct device_attribute *attr,
 					  const char *buf,
 					  size_t count)
@@ -1695,7 +1695,7 @@ out:
   *  0 = Dynamic change motion filter
   *  1 = Default motion filter by FW
   */
-static ssize_t fts_default_mf_show(struct device *dev,
+static ssize_t default_mf_show(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
@@ -1704,7 +1704,7 @@ static ssize_t fts_default_mf_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "%d\n", info->use_default_mf ? 1 : 0);
 }
 
-static ssize_t fts_default_mf_store(struct device *dev,
+static ssize_t default_mf_store(struct device *dev,
 					  struct device_attribute *attr,
 					  const char *buf,
 					  size_t count)
@@ -1892,6 +1892,7 @@ static ssize_t stm_fts_cmd_show(struct device *dev,
 	SelfSenseData comData;
 	MutualSenseFrame frameMS;
 	SelfSenseFrame frameSS;
+	u16 ito_max_val[2] = {0x00};
 
 	u8 report = 0;
 
@@ -1927,7 +1928,7 @@ static ssize_t stm_fts_cmd_show(struct device *dev,
 		case 0x01:
 			frameMS.node_data = NULL;
 			res = production_test_ito(limits_file, &tests,
-				&frameMS);
+				&frameMS, ito_max_val);
 			/* report MS raw frame only if was successfully
 			 * acquired */
 			if (frameMS.node_data != NULL) {
@@ -2268,6 +2269,14 @@ END:
 			index += scnprintf(all_strbuff + index, size - index,
 					   "%3d",
 					   (u8)frameMS.header.sense_node);
+			if (typeOfCommand[0] == 0x01) {
+				index += scnprintf(all_strbuff + index,
+						size - index, " %d ",
+						ito_max_val[0]);
+				index += scnprintf(all_strbuff + index,
+						size - index, "%d ",
+						ito_max_val[1]);
+			}
 #else
 			index += scnprintf(all_strbuff + index,
 					   size - index, "%02X",
@@ -2276,6 +2285,19 @@ END:
 			index += scnprintf(all_strbuff + index,
 					   size - index, "%02X",
 					   (u8)frameMS.header.sense_node);
+			if (typeOfCommand[0] == 0x01) {
+				index += scnprintf(all_strbuff + index,
+						size - index,
+						"%02X%02X",
+						(ito_max_val[0] & 0xFF00) >> 8,
+						ito_max_val[0] & 0xFF);
+
+				index += scnprintf(all_strbuff + index,
+						size - index,
+						"%02X%02X",
+						(ito_max_val[1] & 0xFF00) >> 8,
+						ito_max_val[1] & 0xFF);
+			}
 #endif
 
 			for (j = 0; j < frameMS.node_data_size; j++) {
@@ -2474,7 +2496,7 @@ END:
 	return index;
 }
 
-static ssize_t fts_autotune_store(struct device *dev,
+static ssize_t autotune_store(struct device *dev,
 				  struct device_attribute *attr,
 				  const char *buf, size_t count)
 {
@@ -2504,7 +2526,7 @@ err_args:
 	return ret < 0 ? ret : count;
 }
 
-static ssize_t fts_autotune_show(struct device *dev,
+static ssize_t autotune_show(struct device *dev,
 				 struct device_attribute *attr,
 				 char *buf)
 {
@@ -2513,7 +2535,7 @@ static ssize_t fts_autotune_show(struct device *dev,
 	return scnprintf(buf, PAGE_SIZE, "{ %08X }\n", info->autotune_stat);
 }
 
-static ssize_t fts_infoblock_getdata_show(struct device *dev,
+static ssize_t infoblock_getdata_show(struct device *dev,
 					  struct device_attribute *attr,
 					  char *buf)
 {
@@ -2701,8 +2723,8 @@ END:
  * 1 = FTS_HEATMAP_PARTIAL
  * 2 = FTS_HEATMAP_FULL
  */
-#ifdef TOUCHSCREEN_HEATMAP
-static ssize_t fts_heatmap_mode_store(struct device *dev,
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
+static ssize_t heatmap_mode_store(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
@@ -2720,7 +2742,7 @@ static ssize_t fts_heatmap_mode_store(struct device *dev,
 	return count;
 }
 
-static ssize_t fts_heatmap_mode_show(struct device *dev,
+static ssize_t heatmap_mode_show(struct device *dev,
 					  struct device_attribute *attr,
 					  char *buf)
 {
@@ -2731,77 +2753,57 @@ static ssize_t fts_heatmap_mode_show(struct device *dev,
 }
 #endif
 
-static DEVICE_ATTR(infoblock_getdata, (0444),
-		   fts_infoblock_getdata_show, NULL);
-static DEVICE_ATTR(fwupdate, 0664, fts_fwupdate_show,
-		   fts_fwupdate_store);
-static DEVICE_ATTR(appid, 0444, fts_appid_show, NULL);
-static DEVICE_ATTR(mode_active, 0444, fts_mode_active_show, NULL);
-static DEVICE_ATTR(fw_file_test, 0444, fts_fw_test_show, NULL);
-static DEVICE_ATTR(status, 0444, fts_status_show, NULL);
-static DEVICE_ATTR(stm_fts_cmd, 0664, stm_fts_cmd_show,
-		   stm_fts_cmd_store);
-#ifdef TOUCHSCREEN_HEATMAP
-static DEVICE_ATTR(heatmap_mode, 0664, fts_heatmap_mode_show,
-		   fts_heatmap_mode_store);
+static DEVICE_ATTR_RO(infoblock_getdata);
+static DEVICE_ATTR_RW(fwupdate);
+static DEVICE_ATTR_RO(appid);
+static DEVICE_ATTR_RO(mode_active);
+static DEVICE_ATTR_RO(fw_file_test);
+static DEVICE_ATTR_RO(status);
+static DEVICE_ATTR_RW(stm_fts_cmd);
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
+static DEVICE_ATTR_RW(heatmap_mode);
 #endif
 #ifdef USE_ONE_FILE_NODE
-static DEVICE_ATTR(feature_enable, 0664,
-		   fts_feature_enable_show, fts_feature_enable_store);
+static DEVICE_ATTR_RW(feature_enable);
 #else
 
 
 #ifdef GRIP_MODE
-static DEVICE_ATTR(grip_mode, 0664, fts_grip_mode_show,
-		   fts_grip_mode_store);
+static DEVICE_ATTR_RW(grip_mode);
 #endif
 
 #ifdef CHARGER_MODE
-static DEVICE_ATTR(charger_mode, 0664,
-		   fts_charger_mode_show, fts_charger_mode_store);
+static DEVICE_ATTR_RW(charger_mode);
 #endif
 
 #ifdef GLOVE_MODE
-static DEVICE_ATTR(glove_mode, 0664,
-		   fts_glove_mode_show, fts_glove_mode_store);
+static DEVICE_ATTR_RW(glove_mode);
 #endif
 
 #ifdef COVER_MODE
-static DEVICE_ATTR(cover_mode, 0664,
-		   fts_cover_mode_show, fts_cover_mode_store);
+static DEVICE_ATTR_RW(cover_mode);
 #endif
 
 #ifdef STYLUS_MODE
-static DEVICE_ATTR(stylus_mode, 0664,
-		   fts_stylus_mode_show, fts_stylus_mode_store);
+static DEVICE_ATTR_RW(stylus_mode);
 #endif
 
 #endif
 
 #ifdef GESTURE_MODE
-static DEVICE_ATTR(gesture_mask, 0664,
-		   fts_gesture_mask_show, fts_gesture_mask_store);
-static DEVICE_ATTR(gesture_coordinates, 0664,
-		   fts_gesture_coordinates_show, NULL);
+static DEVICE_ATTR_RW(gesture_mask);
+static DEVICE_ATTR_RO(gesture_coordinates);
 #endif
-static DEVICE_ATTR(autotune, 0664, fts_autotune_show, fts_autotune_store);
+static DEVICE_ATTR_RW(autotune);
 
-static DEVICE_ATTR(touchsim, 0664,
-		   fts_touch_simulation_show,
-		   fts_touch_simulation_store);
+static DEVICE_ATTR_RW(touchsim);
 
-static DEVICE_ATTR(default_mf, 0664,
-		   fts_default_mf_show,
-		   fts_default_mf_store);
+static DEVICE_ATTR_RW(default_mf);
 
 #ifdef SUPPORT_PROX_PALM
-static DEVICE_ATTR(audio_status, 0644,
-		   audio_status_show,
-		   audio_status_store);
+static DEVICE_ATTR_RW(audio_status);
 
-static DEVICE_ATTR(prox_palm_status, 0644,
-		   prox_palm_status_show,
-		   prox_palm_status_store);
+static DEVICE_ATTR_RW(prox_palm_status);
 #endif
 
 /*  /sys/devices/soc.0/f9928000.i2c/i2c-6/6-0049 */
@@ -2813,7 +2815,7 @@ static struct attribute *fts_attr_group[] = {
 	&dev_attr_fw_file_test.attr,
 	&dev_attr_status.attr,
 	&dev_attr_stm_fts_cmd.attr,
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	&dev_attr_heatmap_mode.attr,
 #endif
 #ifdef USE_ONE_FILE_NODE
@@ -3906,7 +3908,7 @@ static bool fts_user_report_event_handler(struct fts_ts_info *info, unsigned
 	return false;
 }
 
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 static void heatmap_enable(void)
 {
 	u8 command[] = {FTS_CMD_SYSTEM, SYS_CMD_LOAD_DATA,
@@ -4110,12 +4112,27 @@ int fts_enable_grip(struct fts_ts_info *info, bool enable)
 		{0xC0, 0x03, 0x10, 0xFF, 0x03, 0x00, 0x00, 0x00, 0x00};
 	static uint8_t disable_cmd[] =
 		{0xC0, 0x03, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	static uint8_t left_size_cmd[] =
+		{0xC0, 0x03, 0x20, 0x00/* unit: px */, 0x00, 0x00, 0x00, 0x5F, 0x09};
+	static uint8_t right_size_cmd[] =
+		{0xC0, 0x03, 0x21, 0x00/* unit: px */, 0x00, 0x00, 0x00, 0x5F, 0x09};
 	int res;
 
-	if (enable)
+	if (enable) {
+		if (info->board->fw_grip_area) {
+			left_size_cmd[3] = info->board->fw_grip_area;
+			right_size_cmd[3] = info->board->fw_grip_area;
+			res = fts_write(left_size_cmd, sizeof(left_size_cmd));
+			res = fts_write(right_size_cmd, sizeof(right_size_cmd));
+		}
 		res = fts_write(enable_cmd, sizeof(enable_cmd));
-	else
+	} else {
+		if (info->board->fw_grip_area) {
+			res = fts_write(left_size_cmd, sizeof(left_size_cmd));
+			res = fts_write(right_size_cmd, sizeof(right_size_cmd));
+		}
 		res = fts_write(disable_cmd, sizeof(disable_cmd));
+	}
 	if (res < 0)
 		pr_err("%s: fts_write failed with res=%d.\n", __func__,
 		       res);
@@ -4413,7 +4430,7 @@ static irqreturn_t fts_interrupt_handler(int irq, void *handle)
 	/* TODO(spfetsch): if the mutual strength heatmap was already read into
 	 * the touch offload interface, use it here instead of reading again.
 	 */
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	if (processed_pointer_event)
 		heatmap_read(&info->v4l2, ktime_to_ns(info->timestamp));
 #endif
@@ -4924,6 +4941,25 @@ static void fts_fw_update_auto(struct work_struct *work)
 	fts_set_bus_ref(info, FTS_BUS_REF_FW_UPDATE, false);
 }
 
+/**
+ *  Save the golden MS raw data to the touch IC if firmware has separated it
+ *  from the PI process.
+ */
+int save_golden_ms_raw(struct fts_ts_info *info)
+{
+	u8 cmd[3] = {0xC0, 0x01, 0x01};
+	int ret = 0;
+
+	ret = fts_write(cmd, 3);
+	if (ret < 0)
+		pr_err("Fail to save golden MS raw, ret = %d", ret);
+	else {
+		mdelay(150);	/* Time to secure the saving process (90 ms) */
+		pr_info("Golden MS raw is saved!");
+	}
+	return ret;
+}
+
 /* TODO: define if need to do the full mp at the boot */
 /**
   *	Execute the initialization of the IC (supporting a retry mechanism),
@@ -4943,6 +4979,9 @@ static int fts_chip_initialization(struct fts_ts_info *info, int init_type)
 	for (retry = 0; retry < RETRY_INIT_BOOT; retry++) {
 #ifndef COMPUTE_INIT_METHOD
 		ret2 = production_test_initialization(init_type);
+		if (ret2 == OK &&
+		    info->board->separate_save_golden_ms_raw_cmd)
+			save_golden_ms_raw(info);
 #else
 		ret2 = production_test_main(limits_file, 1, init_type, &tests,
 			MP_FLAG_BOOT);
@@ -5155,10 +5194,12 @@ static int fts_init_sensing(struct fts_ts_info *info)
 	int error = 0;
 
 #ifdef CONFIG_DRM
-	error |= drm_panel_notifier_register(info->board->panel,
-		&info->notifier); /* register the
-				   * suspend/resume
-				   * function */
+	if (info->board->panel) {
+		/* register the suspend/resume function */
+		error |= drm_panel_notifier_register(info->board->panel,
+			&info->notifier);
+	} else
+		pr_info("%s: Skip DRM notifier registration\n", __func__);
 #endif
 	error |= fts_interrupt_install(info);	/* register event handler */
 	error |= fts_mode_handler(info, 0);	/* enable the features and
@@ -5169,7 +5210,7 @@ static int fts_init_sensing(struct fts_ts_info *info)
 		pr_err("%s Init after Probe error (ERROR = %08X)\n",
 			__func__, error);
 
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	heatmap_enable();
 #endif
 
@@ -5415,7 +5456,7 @@ static void fts_resume_work(struct work_struct *work)
 
 	info->sensor_sleep = false;
 
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	/* heatmap must be enabled after every chip reset (fts_system_reset) */
 	heatmap_enable();
 #endif
@@ -6019,7 +6060,13 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 		pr_info("Automatic firmware update disabled\n");
 	}
 
-#ifdef TOUCHSCREEN_HEATMAP
+	bdata->separate_save_golden_ms_raw_cmd = false;
+	if (of_property_read_bool(np, "st,save-golden-ms-raw")) {
+		bdata->separate_save_golden_ms_raw_cmd = true;
+		pr_info("Separate \"Save Golden MS Raw\" command from PI command.\n");
+	}
+
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	bdata->heatmap_mode_full_init = false;
 	if (of_property_read_bool(np, "st,heatmap_mode_full")) {
 		bdata->heatmap_mode_full_init = true;
@@ -6061,6 +6108,10 @@ static int parse_dt(struct device *dev, struct fts_hw_platform_data *bdata)
 		    offload_id[0], offload_id[1], offload_id[2], offload_id[3],
 		    bdata->offload_id);
 	}
+
+	if (of_property_read_u8(np, "st,grip_area", &bdata->fw_grip_area))
+		bdata->fw_grip_area = 0;
+	pr_info("Firmware grip area = %u\n", bdata->fw_grip_area);
 
 	return OK;
 }
@@ -6341,7 +6392,7 @@ static int fts_probe(struct spi_device *client)
 	/* Set initial heatmap mode based on the device tree configuration.
 	 * Default is partial heatmap mode.
 	 */
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	if (info->board->heatmap_mode_full_init)
 		info->heatmap_mode = FTS_HEATMAP_FULL;
 	else
@@ -6371,7 +6422,7 @@ static int fts_probe(struct spi_device *client)
 		goto ProbeErrorExit_6;
 	}
 
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	/*
 	 * Heatmap_probe must be called before irq routine is registered,
 	 * because heatmap_read is called from interrupt context.
@@ -6484,14 +6535,16 @@ ProbeErrorExit_7:
 		destroy_workqueue(info->touchsim.wq);
 
 #ifdef CONFIG_DRM
-	drm_panel_notifier_unregister(info->board->panel, &info->notifier);
+	if (info->board->panel)
+		drm_panel_notifier_unregister(info->board->panel,
+					      &info->notifier);
 #endif
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
 	touch_offload_cleanup(&info->offload);
 #endif
 
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	heatmap_remove(&info->v4l2);
 #endif
 
@@ -6564,14 +6617,16 @@ static int fts_remove(struct spi_device *client)
 	touch_offload_cleanup(&info->offload);
 #endif
 
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	heatmap_remove(&info->v4l2);
 #endif
 
 	pm_qos_remove_request(&info->pm_qos_req);
 
 #ifdef CONFIG_DRM
-	drm_panel_notifier_unregister(info->board->panel, &info->notifier);
+	if (info->board->panel)
+		drm_panel_notifier_unregister(info->board->panel,
+					      &info->notifier);
 #endif
 
 	/* unregister the device */

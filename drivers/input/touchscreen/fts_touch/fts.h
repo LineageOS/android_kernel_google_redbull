@@ -32,10 +32,8 @@
 #ifndef _LINUX_FTS_I2C_H_
 #define _LINUX_FTS_I2C_H_
 
-#define TOUCHSCREEN_HEATMAP
-
 #include <linux/device.h>
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 #include <linux/input/heatmap.h>
 #endif
 #include <linux/pm_qos.h>
@@ -58,9 +56,8 @@
   */
 /* **** CODE CONFIGURATION **** */
 #define FTS_TS_DRV_NAME		"fts"	/* driver name */
-#define FTS_TS_DRV_VERSION	"5.2.16.14"	/* driver version string
-							 * */
-#define FTS_TS_DRV_VER		0x0502100E	/* driver version u32 format */
+#define FTS_TS_DRV_VERSION	"5.2.16.15"	/* driver version string */
+#define FTS_TS_DRV_VER		0x0502100F	/* driver version u32 format */
 
 /* #define DEBUG */	/* /< define to print more logs in the kernel log
 			 * and better follow the code flow */
@@ -210,7 +207,7 @@
 
 /**@}*/
 /*********************************************************/
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 /* **** LOCAL HEATMAP FEATURE *** */
 #define LOCAL_HEATMAP_WIDTH 7
 #define LOCAL_HEATMAP_HEIGHT 7
@@ -296,13 +293,15 @@ struct fts_hw_platform_data {
 	int x_axis_max;
 	int y_axis_max;
 	bool auto_fw_update;
-#ifdef TOUCHSCREEN_HEATMAP
+	bool separate_save_golden_ms_raw_cmd;
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	bool heatmap_mode_full_init;
 #endif
 	struct drm_panel *panel;
 	u32 initial_panel_index;
 	u32 *force_pi_cfg_ver;
 	u32 offload_id;
+	u8 fw_grip_area;
 };
 
 /* Bits for the bus reference mask */
@@ -334,7 +333,7 @@ typedef enum {
  *			(LOCAL_HEATMAP_WIDTH * LOCAL_HEATMAP_HEIGHT)
  * FTS_HEATMAP_FULL	- read full mutual sense strength frame
  */
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 enum {
 	FTS_HEATMAP_OFF		= 0,
 	FTS_HEATMAP_PARTIAL	= 1,
@@ -415,7 +414,7 @@ struct fts_ts_info {
 	struct completion bus_resumed;		/* resume_work complete */
 
 	struct pm_qos_request pm_qos_req;
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	struct v4l2_heatmap v4l2;
 #endif
 
@@ -483,7 +482,7 @@ struct fts_ts_info {
 	int stylus_enabled;	/* Stylus mode */
 	int cover_enabled;	/* Cover mode */
 	int grip_enabled;	/* Grip mode */
-#ifdef TOUCHSCREEN_HEATMAP
+#if IS_ENABLED(CONFIG_TOUCHSCREEN_HEATMAP)
 	int heatmap_mode;	/* heatmap mode*/
 #endif
 #ifdef SUPPORT_PROX_PALM
