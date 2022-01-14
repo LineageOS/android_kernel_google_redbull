@@ -181,6 +181,7 @@ void release_all_touches(struct fts_ts_info *info)
 		info->offload.coords[i].major = 0;
 		info->offload.coords[i].minor = 0;
 		info->offload.coords[i].pressure = 0;
+		info->offload.coords[i].rotation = 0;
 #endif
 	}
 	input_report_key(info->input_dev, BTN_TOUCH, 0);
@@ -3106,6 +3107,7 @@ static bool fts_enter_pointer_event_handler(struct fts_ts_info *info, unsigned
 	info->offload.coords[touchId].y = y;
 	info->offload.coords[touchId].major = major;
 	info->offload.coords[touchId].minor = minor;
+	info->offload.coords[touchId].rotation = 0; /* no FW support */
 	info->offload.coords[touchId].status = COORD_STATUS_FINGER;
 
 #ifndef SKIP_PRESSURE
@@ -4149,7 +4151,9 @@ static void fts_offload_resume_work(struct work_struct *work)
 	struct fts_ts_info *info = container_of(dwork, struct fts_ts_info,
 						offload_resume_work);
 
-	fts_enable_grip(info, false);
+	if (info->offload.config.filter_grip == 1)
+		fts_enable_grip(info, false);
+
 }
 
 static void fts_populate_coordinate_channel(struct fts_ts_info *info,
@@ -4170,6 +4174,7 @@ static void fts_populate_coordinate_channel(struct fts_ts_info *info,
 		dc->coords[j].major = info->offload.coords[j].major;
 		dc->coords[j].minor = info->offload.coords[j].minor;
 		dc->coords[j].pressure = info->offload.coords[j].pressure;
+		dc->coords[j].rotation = info->offload.coords[j].rotation;
 		dc->coords[j].status = info->offload.coords[j].status;
 	}
 }
@@ -4285,6 +4290,26 @@ static void fts_populate_self_channel(struct fts_ts_info *info,
 	kfree(ss_frame.sense_data);
 }
 
+static void fts_populate_driver_status_channel(struct fts_ts_info *info,
+					struct touch_offload_frame *frame,
+					int channel)
+{
+	struct TouchOffloadDriverStatus *ds =
+		(struct TouchOffloadDriverStatus *)frame->channel_data[channel];
+	memset(ds, 0, frame->channel_data_size[channel]);
+	ds->header.channel_type = (u32)CONTEXT_CHANNEL_TYPE_DRIVER_STATUS;
+	ds->header.channel_size = sizeof(struct TouchOffloadDriverStatus);
+
+	ds->contents.screen_state = 1;
+	ds->screen_state = info->sensor_sleep ? 0 : 1;
+
+	ds->display_refresh_rate = 60;
+#ifdef DYNAMIC_REFRESH_RATE
+	ds->contents.display_refresh_rate = 1;
+	ds->display_refresh_rate = info->display_refresh_rate;
+#endif
+}
+
 static void fts_populate_frame(struct fts_ts_info *info,
 				struct touch_offload_frame *frame)
 {
@@ -4302,6 +4327,16 @@ static void fts_populate_frame(struct fts_ts_info *info,
 			fts_populate_mutual_channel(info, frame, i);
 		else if ((frame->channel_type[i] & TOUCH_SCAN_TYPE_SELF) != 0)
 			fts_populate_self_channel(info, frame, i);
+		else if ((frame->channel_type[i] ==
+			  CONTEXT_CHANNEL_TYPE_DRIVER_STATUS) != 0)
+			fts_populate_driver_status_channel(info, frame, i);
+		else if ((frame->channel_type[i] ==
+			  CONTEXT_CHANNEL_TYPE_STYLUS_STATUS) != 0) {
+			/* Stylus context is not required by this driver */
+			dev_err_once(info->dev,
+				  "%s: Driver does not support stylus status",
+				  __func__);
+		}
 	}
 }
 
@@ -4484,6 +4519,9 @@ static void fts_offload_report(void *handle,
 			input_report_abs(info->input_dev, ABS_MT_PRESSURE,
 					 report->coords[i].pressure);
 #endif
+			input_report_abs(info->input_dev, ABS_MT_ORIENTATION,
+					 report->coords[i].rotation);
+
 		} else {
 			input_mt_slot(info->input_dev, i);
 			input_report_abs(info->input_dev, ABS_MT_PRESSURE, 0);
@@ -4491,6 +4529,9 @@ static void fts_offload_report(void *handle,
 						   MT_TOOL_FINGER, 0);
 			input_report_abs(info->input_dev, ABS_MT_TRACKING_ID,
 					 -1);
+
+			input_report_abs(info->input_dev, ABS_MT_ORIENTATION,
+					 0);
 		}
 	}
 
@@ -6306,6 +6347,12 @@ static int fts_probe(struct spi_device *client)
 			     DISTANCE_MAX, 0, 0);
 #endif
 
+	/* Units are (-8192, 8192), representing the range between rotation
+	 * 90 degrees to left and 90 degrees to the right.
+	 */
+	input_set_abs_params(info->input_dev, ABS_MT_ORIENTATION, -8192, 8192,
+			     0, 0);
+
 #ifdef GESTURE_MODE
 	input_set_capability(info->input_dev, EV_KEY, KEY_WAKEUP);
 
@@ -6445,8 +6492,10 @@ static int fts_probe(struct spi_device *client)
 #endif
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
-	info->offload.caps.touch_offload_major_version = 1;
-	info->offload.caps.touch_offload_minor_version = 0;
+	info->offload.caps.touch_offload_major_version =
+			TOUCH_OFFLOAD_INTERFACE_MAJOR_VERSION;
+	info->offload.caps.touch_offload_minor_version =
+			TOUCH_OFFLOAD_INTERFACE_MINOR_VERSION;
 	info->offload.caps.device_id = info->board->offload_id;
 	info->offload.caps.display_width = info->board->x_axis_max;
 	info->offload.caps.display_height = info->board->y_axis_max;
@@ -6461,10 +6510,14 @@ static int fts_probe(struct spi_device *client)
 	    TOUCH_DATA_TYPE_BASELINE;
 	info->offload.caps.touch_scan_types =
 	    TOUCH_SCAN_TYPE_MUTUAL | TOUCH_SCAN_TYPE_SELF;
+	info->offload.caps.context_channel_types =
+			CONTEXT_CHANNEL_TYPE_DRIVER_STATUS;
 	info->offload.caps.continuous_reporting = true;
 	info->offload.caps.noise_reporting = false;
 	info->offload.caps.cancel_reporting = false;
+	info->offload.caps.rotation_reporting = true;
 	info->offload.caps.size_reporting = true;
+	info->offload.caps.auto_reporting = false;
 	info->offload.caps.filter_grip = true;
 	info->offload.caps.filter_palm = true;
 	info->offload.caps.num_sensitivity_settings = 1;
