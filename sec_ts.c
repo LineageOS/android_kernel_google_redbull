@@ -1601,6 +1601,7 @@ static void sec_ts_handle_coord_event(struct sec_ts_data *ts,
 		ts->offload.coords[t_id].major = ts->coord[t_id].major;
 		ts->offload.coords[t_id].minor = ts->coord[t_id].minor;
 		ts->offload.coords[t_id].pressure = ts->coord[t_id].z;
+		ts->offload.coords[t_id].rotation = 0;
 #endif
 
 		if ((ts->coord[t_id].ttype ==
@@ -1950,6 +1951,7 @@ static void sec_ts_populate_coordinate_channel(struct sec_ts_data *ts,
 		dc->coords[j].major = ts->offload.coords[j].major;
 		dc->coords[j].minor = ts->offload.coords[j].minor;
 		dc->coords[j].pressure = ts->offload.coords[j].pressure;
+		dc->coords[j].rotation = ts->offload.coords[j].rotation;
 		dc->coords[j].status = ts->offload.coords[j].status;
 	}
 }
@@ -2163,6 +2165,24 @@ static void sec_ts_populate_self_channel(struct sec_ts_data *ts,
 	}
 }
 
+static void sec_ts_populate_driver_status_channel(struct sec_ts_data *ts,
+					struct touch_offload_frame *frame,
+					int channel)
+{
+	struct TouchOffloadDriverStatus *ds =
+		(struct TouchOffloadDriverStatus *)frame->channel_data[channel];
+	memset(ds, 0, frame->channel_data_size[channel]);
+	ds->header.channel_type = (u32)CONTEXT_CHANNEL_TYPE_DRIVER_STATUS;
+	ds->header.channel_size = sizeof(struct TouchOffloadDriverStatus);
+
+	ds->contents.screen_state = 1;
+	ds->screen_state = (ts->power_status == SEC_TS_STATE_POWER_ON) ? 1 : 0;
+
+	/* Display refresh rate not currently available in this driver */
+	ds->display_refresh_rate = 60;
+	ds->contents.display_refresh_rate = 0;
+}
+
 static void sec_ts_populate_frame(struct sec_ts_data *ts,
 				struct touch_offload_frame *frame)
 {
@@ -2185,6 +2205,16 @@ static void sec_ts_populate_frame(struct sec_ts_data *ts,
 			sec_ts_populate_mutual_channel(ts, frame, i);
 		else if ((frame->channel_type[i] & TOUCH_SCAN_TYPE_SELF) != 0)
 			sec_ts_populate_self_channel(ts, frame, i);
+		else if ((frame->channel_type[i] ==
+			  CONTEXT_CHANNEL_TYPE_DRIVER_STATUS) != 0)
+			sec_ts_populate_driver_status_channel(ts, frame, i);
+		else if ((frame->channel_type[i] ==
+			  CONTEXT_CHANNEL_TYPE_STYLUS_STATUS) != 0) {
+			/* Stylus context is not required by this driver */
+			input_err(true, &ts->client->dev,
+				  "%s: Driver does not support stylus status",
+				  __func__);
+		}
 	}
 }
 
@@ -2220,7 +2250,7 @@ static void sec_ts_offload_set_running(struct sec_ts_data *ts, bool running)
 {
 	if (ts->offload.offload_running != running) {
 		ts->offload.offload_running = running;
-		if (running) {
+		if (running && ts->offload.config.filter_grip == 1) {
 			pr_info("%s: disabling FW grip.\n", __func__);
 			sec_ts_enable_grip(ts, false);
 		} else {
@@ -2689,6 +2719,8 @@ static void sec_ts_offload_report(void *handle,
 				input_report_abs(ts->input_dev,
 					ABS_MT_PRESSURE,
 					report->coords[i].pressure);
+			input_report_abs(ts->input_dev, ABS_MT_ORIENTATION,
+					 report->coords[i].rotation);
 		} else {
 			input_mt_slot(ts->input_dev, i);
 			input_report_abs(ts->input_dev, ABS_MT_PRESSURE, 0);
@@ -2696,6 +2728,7 @@ static void sec_ts_offload_report(void *handle,
 						   MT_TOOL_FINGER, 0);
 			input_report_abs(ts->input_dev, ABS_MT_TRACKING_ID,
 					 -1);
+			input_report_abs(ts->input_dev, ABS_MT_ORIENTATION, 0);
 		}
 	}
 
@@ -3464,6 +3497,11 @@ static void sec_ts_set_input_prop(struct sec_ts_data *ts,
 		input_set_abs_params(dev, ABS_MT_PRESSURE, 0,
 				     SEC_TS_PRESSURE_MAX, 0, 0);
 
+	/* Units are (-8192, 8192), representing the range between rotation
+	 * 90 degrees to left and 90 degrees to the right.
+	 */
+	input_set_abs_params(dev, ABS_MT_ORIENTATION, -8192, 8192, 0, 0);
+
 	if (propbit == INPUT_PROP_POINTER)
 		input_mt_init_slots(dev, MAX_SUPPORT_TOUCH_COUNT,
 				    INPUT_MT_POINTER);
@@ -3905,8 +3943,10 @@ static int sec_ts_probe(struct spi_device *client)
 	}
 
 #if IS_ENABLED(CONFIG_TOUCHSCREEN_OFFLOAD)
-	ts->offload.caps.touch_offload_major_version = 1;
-	ts->offload.caps.touch_offload_minor_version = 0;
+	ts->offload.caps.touch_offload_major_version =
+			TOUCH_OFFLOAD_INTERFACE_MAJOR_VERSION;
+	ts->offload.caps.touch_offload_minor_version =
+			TOUCH_OFFLOAD_INTERFACE_MINOR_VERSION;
 	/* ID equivalent to the 4-byte, little-endian string: '00r3' */
 	ts->offload.caps.device_id =
 	    '3' << 24 | 'r' << 16 | '0' << 8 | '0' << 0;
@@ -3931,11 +3971,15 @@ static int sec_ts_probe(struct spi_device *client)
 	    TOUCH_DATA_TYPE_COORD | TOUCH_DATA_TYPE_STRENGTH;
 	ts->offload.caps.touch_scan_types =
 	    TOUCH_SCAN_TYPE_MUTUAL | TOUCH_SCAN_TYPE_SELF;
+	ts->offload.caps.context_channel_types =
+			CONTEXT_CHANNEL_TYPE_DRIVER_STATUS;
 
 	ts->offload.caps.continuous_reporting = true;
 	ts->offload.caps.noise_reporting = false;
 	ts->offload.caps.cancel_reporting = false;
+	ts->offload.caps.rotation_reporting = true;
 	ts->offload.caps.size_reporting = true;
+	ts->offload.caps.auto_reporting = false;
 	ts->offload.caps.filter_grip = true;
 	ts->offload.caps.filter_palm = true;
 	ts->offload.caps.num_sensitivity_settings = 1;
@@ -4119,6 +4163,7 @@ void sec_ts_unlocked_release_all_finger(struct sec_ts_data *ts)
 		ts->offload.coords[i].major = 0;
 		ts->offload.coords[i].minor = 0;
 		ts->offload.coords[i].pressure = 0;
+		ts->offload.coords[i].rotation = 0;
 #endif
 		ts->coord[i].action = SEC_TS_COORDINATE_ACTION_RELEASE;
 		ts->coord[i].mcount = 0;
