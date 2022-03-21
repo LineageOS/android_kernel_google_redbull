@@ -5506,7 +5506,7 @@ static void fts_resume_work(struct work_struct *work)
 	/* Set touch_offload configuration */
 	if (info->offload.offload_running) {
 		pr_info("%s: applying touch_offload settings.\n", __func__);
-		if (!info->offload.config.filter_grip) {
+		if (info->offload.config.filter_grip) {
 			/* The grip disable command will not take effect unless
 			 * it is delayed ~100ms.
 			 */
