@@ -309,7 +309,15 @@ int msm_comm_set_buses(struct msm_vidc_core *core, u32 sid, bool force_reset)
 		if ((!filled_len || !device_addr) && !force_reset &&
 			(inst->session_type != MSM_VIDC_CVP)) {
 			s_vpr_l(sid, "%s: no input\n", __func__);
-			continue;
+			mutex_lock(&inst->eosbufs.lock);
+			if (list_empty(&inst->eosbufs.list) &&
+				!inst->in_flush && !inst->out_flush) {
+				s_vpr_l(sid, "%s:No pending eos/flush cmds\n",
+					     __func__);
+				mutex_unlock(&inst->eosbufs.lock);
+				continue;
+			}
+			mutex_unlock(&inst->eosbufs.lock);
 		}
 
 		/* skip inactive session bus bandwidth */
@@ -917,7 +925,15 @@ int msm_vidc_set_clocks(struct msm_vidc_core *core, u32 sid, bool force_reset)
 
 		if ((!filled_len || !device_addr) && !force_reset) {
 			s_vpr_l(sid, "%s: no input\n", __func__);
-			continue;
+			mutex_lock(&inst->eosbufs.lock);
+			if (list_empty(&inst->eosbufs.list) && !inst->in_flush
+				&& !inst->out_flush) {
+				s_vpr_l(sid, "%s:No pending eos/flush cmds\n",
+					       __func__);
+				mutex_unlock(&inst->eosbufs.lock);
+				continue;
+			}
+			mutex_unlock(&inst->eosbufs.lock);
 		}
 
 		/* skip inactive session clock rate */
@@ -1765,10 +1781,17 @@ int msm_vidc_decide_core_and_power_mode_iris1(struct msm_vidc_inst *inst)
 		msm_vidc_power_save_mode_enable(inst, enable);
 	} else if (cur_inst_lp_load + core_load <= max_freq) {
 		msm_vidc_power_save_mode_enable(inst, true);
-	} else {
+	} else if (cur_inst_lp_load + core_lp_load <= max_freq) {
 		s_vpr_h(inst->sid, "Moved all inst's to LP");
 		msm_vidc_move_core_to_power_save_mode(core,
 			VIDC_CORE_ID_1, inst->sid);
+	} else {
+		if (!is_realtime_session(inst)) {
+			s_vpr_h(inst->sid, "Supporting NRT session");
+		} else {
+			s_vpr_e(inst->sid, "Core cannot support this load\n");
+			return -EINVAL;
+		}
 	}
 
 	inst->clk_data.core_id = VIDC_CORE_ID_1;
