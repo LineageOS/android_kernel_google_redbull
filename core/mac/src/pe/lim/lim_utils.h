@@ -1797,4 +1797,18 @@ void lim_flush_bssid(struct mac_context *mac_ctx, uint8_t *bssid);
  */
 bool lim_is_sha384_akm(enum ani_akm_type akm);
 
+#ifdef WLAN_FEATURE_SAE
+/**
+ * lim_process_sae_msg() - Process SAE message
+ * @mac: Global MAC pointer
+ * @body: Buffer pointer
+ *
+ * Return: None
+ */
+void lim_process_sae_msg(struct mac_context *mac, struct sir_sae_msg *body);
+#else
+static inline void lim_process_sae_msg(struct mac_context *mac, void *body);
+{}
+#endif
+
 #endif /* __LIM_UTILS_H */
