@@ -94,7 +94,7 @@ static void lim_process_sae_msg_sta(struct mac_context *mac,
 						    eSIR_MAC_SUCCESS_STATUS,
 						    session);
 		else
-			lim_restore_from_auth_state(mac, eSIR_SME_AUTH_REFUSED,
+			lim_restore_from_auth_state(mac, sae_msg->result_code,
 				eSIR_MAC_UNSPEC_FAILURE_STATUS, session);
 		break;
 	default:
@@ -184,7 +184,7 @@ static void lim_process_sae_msg_ap(struct mac_context *mac,
  *
  * Return: None
  */
-static void lim_process_sae_msg(struct mac_context *mac, struct sir_sae_msg *body)
+void lim_process_sae_msg(struct mac_context *mac, struct sir_sae_msg *body)
 {
 	struct sir_sae_msg *sae_msg = body;
 	struct pe_session *session;
@@ -219,9 +219,6 @@ static void lim_process_sae_msg(struct mac_context *mac, struct sir_sae_msg *bod
 	else
 		pe_debug("SAE message on unsupported interface");
 }
-#else
-static inline void lim_process_sae_msg(struct mac_context *mac, void *body)
-{}
 #endif
 
 /**
