@@ -6347,10 +6347,10 @@ static int fts_probe(struct spi_device *client)
 			     DISTANCE_MAX, 0, 0);
 #endif
 
-	/* Units are (-8192, 8192), representing the range between rotation
+	/* Units are (-4096, 4096), representing the range between rotation
 	 * 90 degrees to left and 90 degrees to the right.
 	 */
-	input_set_abs_params(info->input_dev, ABS_MT_ORIENTATION, -8192, 8192,
+	input_set_abs_params(info->input_dev, ABS_MT_ORIENTATION, -4096, 4096,
 			     0, 0);
 
 #ifdef GESTURE_MODE
