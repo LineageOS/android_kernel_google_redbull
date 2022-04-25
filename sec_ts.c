@@ -3497,10 +3497,10 @@ static void sec_ts_set_input_prop(struct sec_ts_data *ts,
 		input_set_abs_params(dev, ABS_MT_PRESSURE, 0,
 				     SEC_TS_PRESSURE_MAX, 0, 0);
 
-	/* Units are (-8192, 8192), representing the range between rotation
+	/* Units are (-4096, 4096), representing the range between rotation
 	 * 90 degrees to left and 90 degrees to the right.
 	 */
-	input_set_abs_params(dev, ABS_MT_ORIENTATION, -8192, 8192, 0, 0);
+	input_set_abs_params(dev, ABS_MT_ORIENTATION, -4096, 4096, 0, 0);
 
 	if (propbit == INPUT_PROP_POINTER)
 		input_mt_init_slots(dev, MAX_SUPPORT_TOUCH_COUNT,
