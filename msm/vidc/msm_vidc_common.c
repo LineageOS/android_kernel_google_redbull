@@ -1490,6 +1490,9 @@ static void msm_vidc_comm_update_ctrl_limits(struct msm_vidc_inst *inst)
 		msm_vidc_comm_update_ctrl(inst,
 				V4L2_CID_MPEG_VIDEO_B_FRAMES,
 				&inst->capability.cap[CAP_BFRAME]);
+		msm_vidc_comm_update_ctrl(inst,
+				V4L2_CID_MPEG_VIDEO_HEVC_PROFILE,
+				&inst->capability.cap[CAP_PROFILE]);
 	}
 	msm_vidc_comm_update_ctrl(inst,
 			V4L2_CID_MPEG_VIDEO_H264_LEVEL,
