@@ -281,6 +281,11 @@ static struct msm_vidc_codec_capability lito_capabilities_v0[] = {
 	{CAP_HEIC_IMAGE_FRAME_WIDTH, ENC, HEVC, 512, 8192, 2, 8192},
 	{CAP_HEIC_IMAGE_FRAME_HEIGHT, ENC, HEVC, 512, 8192, 2, 8192},
 
+	/* profile hevc usecase specific */
+	{CAP_PROFILE, ENC, HEVC, V4L2_MPEG_VIDEO_HEVC_PROFILE_MAIN,
+	                         V4L2_MPEG_VIDEO_HEVC_PROFILE_MAIN, 1,
+	                         V4L2_MPEG_VIDEO_HEVC_PROFILE_MAIN},
+
 	/* Level for AVC and HEVC encoder specific.
 	   Default for levels is UNKNOWN value. But if we use unknown
 	   value here to set as default, max value needs to be set to
