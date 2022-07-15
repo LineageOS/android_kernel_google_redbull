@@ -868,6 +868,7 @@ ucfg_fwol_get_is_rate_limit_enabled(struct wlan_objmgr_psoc *psoc,
 	return QDF_STATUS_E_FAILURE;
 }
 #endif /* FEATURE_WLAN_RA_FILTERING */
+
 static inline QDF_STATUS
 ucfg_fwol_configure_global_params(struct wlan_objmgr_psoc *psoc,
 				  struct wlan_objmgr_pdev *pdev)
