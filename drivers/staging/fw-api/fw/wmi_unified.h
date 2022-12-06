@@ -6935,6 +6935,8 @@ typedef enum {
     /* Param to enable/disable PCIE HW ILP */
     WMI_PDEV_PARAM_PCIE_HW_ILP,
 
+    /* Param to disable Hardware Assist feature */
+    WMI_PDEV_PARAM_DISABLE_HW_ASSIST = 0xCF,
 } WMI_PDEV_PARAM;
 
 #define WMI_PDEV_ONLY_BSR_TRIG_IS_ENABLED(trig_type) WMI_GET_BITS(trig_type, 0, 1)
