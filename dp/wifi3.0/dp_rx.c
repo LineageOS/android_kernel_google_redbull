@@ -2054,8 +2054,15 @@ done:
 		next = nbuf->next;
 		rx_tlv_hdr = qdf_nbuf_data(nbuf);
 		/* Get TID from struct cb->tid_val, save to tid */
-		if (qdf_nbuf_is_rx_chfrag_start(nbuf))
+		if (qdf_nbuf_is_rx_chfrag_start(nbuf)) {
 			tid = qdf_nbuf_get_tid_val(nbuf);
+			if (tid >= CDP_MAX_DATA_TIDS) {
+				DP_STATS_INC(soc, rx.err.rx_invalid_tid_err, 1);
+				qdf_nbuf_free(nbuf);
+				nbuf = next;
+				continue;
+			}
+		}
 
 		/*
 		 * Check if DMA completed -- msdu_done is the last bit
