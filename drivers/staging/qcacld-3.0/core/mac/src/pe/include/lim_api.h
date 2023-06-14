@@ -116,6 +116,15 @@ void pe_stop(struct mac_context *mac);
 
 #ifdef WLAN_FEATURE_11W
 /**
+ * is_mgmt_protected  -  check RMF enabled for the peer
+ * @vdev_id: vdev id
+ * @peer_mac_addr: peer mac address
+ *
+ * Return: True if RMF enabled and key is installed
+ */
+bool is_mgmt_protected(uint32_t vdev_id, const uint8_t *peer_mac_addr);
+
+/**
  * lim_stop_pmfcomeback_timer() - stop pmf comeback timer
  * @session: Pointer to PE session
  *
@@ -125,6 +134,12 @@ void lim_stop_pmfcomeback_timer(struct pe_session *session);
 #else
 static inline void lim_stop_pmfcomeback_timer(struct pe_session *session)
 {
+}
+
+static inline bool
+is_mgmt_protected(uint32_t vdev_id, const uint8_t *peer_mac_addr)
+{
+	return false;
 }
 #endif
 
