@@ -1648,6 +1648,9 @@ void lim_handle_csa_offload_msg(struct mac_context *mac_ctx,
 	uint16_t chan_space = 0;
 	struct ch_params ch_params = {0};
 	uint32_t channel_bonding_mode;
+	uint8_t csa_chan = csa_params->channel, sec_ch_2g = 0;
+	enum phy_ch_width new_ch_width = csa_params->new_ch_width;
+	enum channel_state chan_state;
 
 	tLimWiderBWChannelSwitchInfo *chnl_switch_info = NULL;
 	tLimChannelSwitchInfo *lim_ch_switch = NULL;
@@ -1678,6 +1681,28 @@ void lim_handle_csa_offload_msg(struct mac_context *mac_ctx,
 		pe_debug("Invalid role to handle CSA");
 		goto err;
 	}
+
+	if (WLAN_REG_IS_24GHZ_CH(csa_chan) &&
+	    wlan_reg_get_bw_value(new_ch_width) > 20) {
+		if (csa_params->sec_chan_offset == PHY_DOUBLE_CHANNEL_LOW_PRIMARY)
+			sec_ch_2g = csa_chan + 4;
+		else if (csa_params->sec_chan_offset == PHY_DOUBLE_CHANNEL_HIGH_PRIMARY)
+			sec_ch_2g = csa_chan - 4;
+	}
+
+	chan_state = wlan_reg_get_bonded_channel_state(mac_ctx->pdev,
+						       csa_chan, new_ch_width,
+						       sec_ch_2g);
+	if (chan_state == CHANNEL_STATE_INVALID ||
+	    chan_state == CHANNEL_STATE_DISABLE) {
+		pe_err("Invalid csa_chan:%d for provided ch_width:%d. Disconnect",
+		       csa_chan, new_ch_width);
+		lim_tear_down_link_with_ap(mac_ctx, session_entry->peSessionId,
+					   eSIR_MAC_CHANNEL_SWITCH_FAILED,
+					   eLIM_HOST_DISASSOC);
+		goto err;
+	}
+
 	/*
 	 * on receiving channel switch announcement from AP, delete all
 	 * TDLS peers before leaving BSS and proceed for channel switch
