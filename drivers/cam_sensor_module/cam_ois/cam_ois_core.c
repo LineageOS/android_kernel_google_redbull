@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -822,6 +823,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 		CAM_ERR(CAM_OIS,
 			"Inval cam_packet strut size: %zu, len_of_buff: %zu",
 			 sizeof(struct cam_packet), pkt_len);
+		cam_mem_put_cpu_buf(dev_config.packet_handle);
 		return -EINVAL;
 	}
 
@@ -832,6 +834,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 	if (cam_packet_util_validate_packet(csl_packet,
 		remain_len)) {
 		CAM_ERR(CAM_OIS, "Invalid packet params");
+		cam_mem_put_cpu_buf(dev_config.packet_handle);
 		return -EINVAL;
 	}
 
@@ -933,6 +936,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			}
 			break;
 			}
+			cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 		}
 
 		if (o_ctrl->cam_ois_state != CAM_OIS_CONFIG) {
@@ -1078,6 +1082,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			CAM_OIS_PACKET_OPCODE_READ) {
 			rc = cam_ois_read_reg(o_ctrl, cmd_get_ois);
 		}
+		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 		break;
 #if IS_ENABLED(CONFIG_CAMERA_FW_UPDATE)
 	case CAM_OIS_PACKET_OPCODE_CALIBRATION:
@@ -1108,6 +1113,7 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			(csl_packet->header.op_code & 0xFFFFFF));
 		return -EINVAL;
 	}
+	cam_mem_put_cpu_buf(dev_config.packet_handle);
 
 	if (!rc)
 		return rc;

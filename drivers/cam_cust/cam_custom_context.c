@@ -774,6 +774,7 @@ static int __cam_custom_ctx_config_dev(struct cam_context *ctx,
 			"request %lld has been flushed, reject packet",
 			packet->header.request_id);
 		rc = -EINVAL;
+		cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 		goto free_req;
 	}
 
@@ -791,6 +792,7 @@ static int __cam_custom_ctx_config_dev(struct cam_context *ctx,
 	if (rc != 0) {
 		CAM_ERR(CAM_CUSTOM, "Prepare config packet failed in HW layer");
 		rc = -EFAULT;
+		cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 		goto free_req;
 	}
 
@@ -861,6 +863,7 @@ static int __cam_custom_ctx_config_dev(struct cam_context *ctx,
 		"Preprocessing Config req_id %lld successful on ctx %u",
 		req->request_id, ctx->ctx_id);
 
+	cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 	return rc;
 
 put_ref:
@@ -869,6 +872,7 @@ put_ref:
 			CAM_ERR(CAM_CUSTOM, "Failed to put ref of fence %d",
 				req_custom->fence_map_out[i].sync_id);
 	}
+	cam_mem_put_cpu_buf((int32_t) cmd->packet_handle);
 free_req:
 	spin_lock_bh(&ctx->lock);
 	list_add_tail(&req->list, &ctx->free_req_list);
