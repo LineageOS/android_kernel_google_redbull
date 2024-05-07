@@ -6682,10 +6682,20 @@ static int32_t tas_smartamp_algo_callback(uint32_t opcode, uint32_t *payload,
 		param_hdr.instance_id = INSTANCE_ID_0;
 		param_hdr.param_id = payload[2];
 		param_hdr.param_size = payload[3];
+		if (param_hdr.param_size > payload_size - 4 * sizeof(uint32_t)) {
+			pr_err("[TI-SmartPA:%s] Invalid param_size %d opcode %d\n",
+				__func__, param_hdr.param_size, opcode);
+			return -EINVAL;
+		}
 		data_start = &payload[4];
 		break;
 	case AFE_PORT_CMDRSP_GET_PARAM_V3:
 		memcpy(&param_hdr, &payload[1], sizeof(struct param_hdr_v3));
+		if (param_hdr.param_size > payload_size - 5 * sizeof(uint32_t)) {
+			pr_err("[TI-SmartPA:%s] Invalid param_size %d opcode %d\n",
+				__func__, param_hdr.param_size, opcode);
+			return -EINVAL;
+		}
 		data_start = &payload[5];
 		break;
 	default:
@@ -6695,6 +6705,13 @@ static int32_t tas_smartamp_algo_callback(uint32_t opcode, uint32_t *payload,
 	data_dest = (u32 *) &this_afe.tas_calib_data;
 	data_dest[0] = payload[0];
 	memcpy(&data_dest[1], &param_hdr, sizeof(struct param_hdr_v3));
+
+	if (param_hdr.param_size > sizeof(this_afe.tas_calib_data.res_cfg.payload)) {
+		pr_err("[TI-SmartPA:%s] unexpected param size detected %d\n",
+			__func__, param_hdr.param_size);
+		return -EINVAL;
+	}
+
 	memcpy(&data_dest[5], data_start, param_hdr.param_size);
 	if (param_hdr.param_id == CAPI_V2_TAS_SA_DC_DETECT) {
 		pr_err("[TI-SmartPA:%s] Detected DC, Calling TAS256X Software Reset \n", __func__);
