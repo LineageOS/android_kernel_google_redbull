@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -174,14 +175,16 @@ static int32_t cam_sensor_read_reg(
 	if (addr <= 0 || addr > 0xFFFF) {
 		CAM_ERR(CAM_SENSOR,
 			"Invalid addr while read Sensor data: %x", addr);
-		return -EINVAL;
+		rc = -EINVAL;
+		goto end;
 	}
 
 	if (num_bytes <= 0 || num_bytes > 8) {
 		CAM_ERR(CAM_SENSOR,
 			"Invalid read size while read Sensor data: %d",
 			num_bytes);
-		return -EINVAL;
+		rc = -EINVAL;
+		goto end;
 	}
 
 	rc = camera_io_dev_read_seq(&s_ctrl->io_master_info,
@@ -190,7 +193,7 @@ static int32_t cam_sensor_read_reg(
 
 	if (rc) {
 		CAM_ERR(CAM_SENSOR, "camera_io_dev_read_seq failed!");
-		return rc;
+		goto end;
 	}
 
 	if (copy_to_user((void __user *) cmd_get_sensor->query_data_handle,
@@ -198,6 +201,8 @@ static int32_t cam_sensor_read_reg(
 		CAM_ERR(CAM_SENSOR, "sensor_read_reg: copy to user failed!");
 	}
 
+end:
+	cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 	return rc;
 }
 
@@ -364,7 +369,7 @@ static int32_t cam_sensor_i2c_pkt_parse(struct cam_sensor_ctrl_t *s_ctrl,
 
 	case CAM_SENSOR_PACKET_OPCODE_SENSOR_READREG: {
 		rc = cam_sensor_read_reg(s_ctrl, csl_packet);
-		return rc;
+		goto end;
 	}
 
 	case CAM_SENSOR_PACKET_OPCODE_SENSOR_NOP: {
@@ -403,6 +408,7 @@ static int32_t cam_sensor_i2c_pkt_parse(struct cam_sensor_ctrl_t *s_ctrl,
 	}
 
 end:
+	cam_mem_put_cpu_buf(config.packet_handle);
 	return rc;
 }
 
@@ -634,6 +640,7 @@ int32_t cam_handle_mem_ptr(uint64_t handle, struct cam_sensor_ctrl_t *s_ctrl)
 			CAM_ERR(CAM_SENSOR,
 				"offset past length of buffer");
 			rc = -EINVAL;
+			cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 			goto end;
 		}
 		remain_len = len - cmd_desc[i].offset;
@@ -641,6 +648,7 @@ int32_t cam_handle_mem_ptr(uint64_t handle, struct cam_sensor_ctrl_t *s_ctrl)
 			CAM_ERR(CAM_SENSOR,
 				"Not enough buffer provided for cmd");
 			rc = -EINVAL;
+			cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 			goto end;
 		}
 		cmd_buf = (uint32_t *)cmd_buf1;
@@ -652,11 +660,14 @@ int32_t cam_handle_mem_ptr(uint64_t handle, struct cam_sensor_ctrl_t *s_ctrl)
 		if (rc < 0) {
 			CAM_ERR(CAM_SENSOR,
 				"Failed to parse the command Buffer Header");
+			cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 			goto end;
 		}
+		cam_mem_put_cpu_buf(cmd_desc[i].mem_handle);
 	}
 
 end:
+	cam_mem_put_cpu_buf(handle);
 	return rc;
 }
 
