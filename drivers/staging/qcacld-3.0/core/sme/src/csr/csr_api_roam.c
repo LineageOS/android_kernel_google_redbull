@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2012-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -15430,7 +15431,7 @@ static void csr_set_mgmt_enc_type(struct csr_roam_profile *profile,
 				  tDot11fBeaconIEs *ies,
 				  struct join_req *csr_join_req)
 {
-	if (profile->MFPEnabled)
+	if (profile->MFPEnabled || profile->MFPCapable)
 		csr_join_req->MgmtEncryptionType =
 					profile->mgmt_encryption_type;
 	else
@@ -15440,6 +15441,8 @@ static void csr_set_mgmt_enc_type(struct csr_roam_profile *profile,
 	   !(profile->MFPRequired) &&
 	   !csr_is_mfpc_capable(&ies->RSN))
 		csr_join_req->MgmtEncryptionType = eSIR_ED_NONE;
+
+	sme_debug("Mgmt encryption type %x", csr_join_req->MgmtEncryptionType);
 }
 #else
 static inline void csr_set_mgmt_enc_type(struct csr_roam_profile *profile,
