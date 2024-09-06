@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2011-2020 The Linux Foundation. All rights reserved.
- * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -4056,8 +4055,6 @@ uint8_t csr_construct_rsn_ie(struct mac_context *mac, uint32_t sessionId,
 						pIesLocal->RSN.RSN_Cap[1] &
 						rsn_ie.RSN_Cap[1];
 			}
-			sme_debug("RSN CAP: %x %x",  pIesLocal->RSN.RSN_Cap[0],
-				  pIesLocal->RSN.RSN_Cap[1]);
 		}
 		/* See if the cyphers in the Bss description match with the
 		 * settings in the profile.
@@ -4152,7 +4149,8 @@ uint8_t csr_construct_rsn_ie(struct mac_context *mac, uint32_t sessionId,
 		/* Advertise BIP in group cipher key management only if PMF is
 		 * enabled and AP is capable.
 		 */
-		if ((RSNCapabilities.MFPCapable && pProfile->MFPCapable)) {
+		if (pProfile->MFPEnabled &&
+			(RSNCapabilities.MFPCapable && pProfile->MFPCapable)) {
 			pGroupMgmtCipherSuite =
 				(uint8_t *) pPMK + sizeof(uint16_t) +
 				(pPMK->cPMKIDs * PMKID_LEN);
@@ -4178,7 +4176,8 @@ uint8_t csr_construct_rsn_ie(struct mac_context *mac, uint32_t sessionId,
 							      (pPMK->cPMKIDs *
 							PMKID_LEN));
 #ifdef WLAN_FEATURE_11W
-		if ((RSNCapabilities.MFPCapable && pProfile->MFPCapable)) {
+		if (pProfile->MFPEnabled &&
+			(RSNCapabilities.MFPCapable && pProfile->MFPCapable)) {
 			if (0 == pPMK->cPMKIDs)
 				pRSNIe->IeHeader.Length += sizeof(uint16_t);
 			pRSNIe->IeHeader.Length += CSR_WPA_OUI_SIZE;
