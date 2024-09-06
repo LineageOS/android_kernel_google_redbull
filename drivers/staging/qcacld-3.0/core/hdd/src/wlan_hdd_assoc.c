@@ -5588,9 +5588,7 @@ int hdd_set_genie_to_csr(struct hdd_adapter *adapter,
 				  (security_ie[1] + 2)))
 		hdd_err("Failed to set the crypto params from IE");
 #endif
-	qdf_trace_hex_dump(QDF_MODULE_ID_HDD, QDF_TRACE_LEVEL_DEBUG,
-			   roam_profile->pRSNReqIE,
-			   roam_profile->nRSNReqIELength);
+
 	hdd_ctx = WLAN_HDD_GET_CTX(adapter);
 	if (hdd_ctx->force_rsne_override &&
 	    (security_ie[0] == DOT11F_EID_RSN)) {
