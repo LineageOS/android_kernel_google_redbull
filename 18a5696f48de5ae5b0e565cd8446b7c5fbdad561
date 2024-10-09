@@ -1,4 +1,22 @@
 {
-  "comments": [],
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "b90c4346_07e80e2e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 3
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 4550
+      },
+      "writtenOn": "2024-10-09T14:45:01Z",
+      "side": 1,
+      "message": "Looks like this causes the same issue on non legacy networks now: https://gitlab.com/LineageOS/issues/android/-/issues/7721",
+      "revId": "18a5696f48de5ae5b0e565cd8446b7c5fbdad561",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ],
   "submitRequirementResults": []
 }
