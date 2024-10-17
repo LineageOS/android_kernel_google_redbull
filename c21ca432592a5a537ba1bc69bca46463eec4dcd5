@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "773acf8c_8c36a31b",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 1
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 3917
+      },
+      "writtenOn": "2024-10-17T19:58:58Z",
+      "side": 1,
+      "message": "Works on barbet - lineage - 22.\nTested wifi, 4G data, camera, gps, voice cal",
+      "revId": "c21ca432592a5a537ba1bc69bca46463eec4dcd5",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
