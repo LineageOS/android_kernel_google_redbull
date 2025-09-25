@@ -134,11 +134,12 @@ static inline int msm_rpmstats_copy_stats(
 {
 	void __iomem *reg;
 	struct msm_rpm_stats_data data;
-	int i, length;
+	int i, length = 0;
 
 	reg = prvdata->reg_base;
 
-	for (i = 0, length = 0; i < prvdata->num_records; i++) {
+	length += scnprintf(prvdata->buf, sizeof(prvdata->buf), "SoC");
+	for (i = 0; i < prvdata->num_records; i++) {
 		data.stat_type = msm_rpmstats_read_long_register(reg, i,
 				offsetof(struct msm_rpm_stats_data,
 					stat_type));
