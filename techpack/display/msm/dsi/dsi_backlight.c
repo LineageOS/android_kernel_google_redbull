@@ -936,11 +936,11 @@ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
 		if (unlikely(!mode))
 			return -ENODEV;
 
-		rc = snprintf(buf, PAGE_SIZE, "%s: %dx%d@%d\n", statestr,
+		rc = snprintf(buf, PAGE_SIZE, "%s: %dx%d@%d", statestr,
 			 mode->timing.h_active, mode->timing.v_active,
 			 mode->timing.refresh_rate);
 	} else {
-		rc = snprintf(buf, PAGE_SIZE, "%s\n", statestr);
+		rc = snprintf(buf, PAGE_SIZE, "%s", statestr);
 	}
 
 	return rc;
