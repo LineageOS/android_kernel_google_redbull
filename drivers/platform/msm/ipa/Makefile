@@ -29,8 +29,8 @@ ipa3-$(CONFIG_IPA3_MHI_PRIME_MANAGER) += ipa_v3/ipa_mpm.o
 
 ipa3-$(CONFIG_RMNET_IPA3) += $(patsubst %,ipa_v3/%,\
 	rmnet_ipa.o ipa_qmi_service_v01.o ipa_qmi_service.o rmnet_ipa_fd_ioctl.o)
-ccflags-$(CONFIG_RMNET_IPA3) += -Idrivers/platform/msm/ipa/ipa_v3
+ccflags-$(CONFIG_RMNET_IPA3) += -I $(srctree)/drivers/platform/msm/ipa/ipa_v3
 
 ipa3-$(CONFIG_IPA3_REGDUMP) += ipa_v3/dump/ipa_reg_dump.o
-ccflags-$(CONFIG_IPA3_REGDUMP) += -Idrivers/platform/msm/ipa/ipa_v3/dump
-ccflags-$(CONFIG_IPA3_REGDUMP_IPA_4_5) += -Idrivers/platform/msm/ipa/ipa_v3/dump/ipa4.5
+ccflags-$(CONFIG_IPA3_REGDUMP) += -I $(srctree)/drivers/platform/msm/ipa/ipa_v3/dump
+ccflags-$(CONFIG_IPA3_REGDUMP_IPA_4_5) += -I $(srctree)/drivers/platform/msm/ipa/ipa_v3/dump/ipa4.5
