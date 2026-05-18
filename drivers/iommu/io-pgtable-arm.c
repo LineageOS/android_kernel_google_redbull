@@ -670,9 +670,9 @@ static int arm_lpae_map_sg(struct io_pgtable_ops *ops, unsigned long iova,
 				arm_lpae_iopte *ptep = ms.pgtable +
 					ARM_LPAE_LVL_IDX(iova, MAP_STATE_LVL,
 							 data);
-				ret = arm_lpae_init_pte(data, iova, phys, prot,
-							MAP_STATE_LVL, ptep,
-							ms.prev_pgtable, false);
+				ret = arm_lpae_init_pte(
+					data, iova, phys, prot, MAP_STATE_LVL,
+					ptep, ms.prev_pgtable, false);
 				if (ret)
 					goto out_err;
 				ms.num_pte++;
