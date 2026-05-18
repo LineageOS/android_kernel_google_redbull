@@ -196,7 +196,7 @@ obj-$(CONFIG_SENSORS_SSC)	+= sensors/
 
 # RMNET driver
 ifneq (,$(filter-out undefined,$(CONFIG_RMNET)))
-ccflags-y += -Idrivers/net/ethernet/qualcomm/rmnet/
+ccflags-y += -I $(srctree)/drivers/net/ethernet/qualcomm/rmnet/
 endif
 obj-$(CONFIG_RMNET) += rmnet.o
 rmnet-objs += $(patsubst %,net/ethernet/qualcomm/rmnet/%,\
