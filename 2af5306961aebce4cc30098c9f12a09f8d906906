@@ -16,6 +16,24 @@
       "message": "can you pick it over to qcom_sm8250 too?",
       "revId": "2af5306961aebce4cc30098c9f12a09f8d906906",
       "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    },
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "03f8cbf3_526c0d8e",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 4550
+      },
+      "writtenOn": "2026-10-02T11:03:33Z",
+      "side": 1,
+      "message": "It\u0027s already there",
+      "parentUuid": "91e9bcad_ecc713f3",
+      "revId": "2af5306961aebce4cc30098c9f12a09f8d906906",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
     }
   ]
 }
