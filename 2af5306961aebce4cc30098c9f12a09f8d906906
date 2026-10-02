@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "unresolved": false,
+      "key": {
+        "uuid": "91e9bcad_ecc713f3",
+        "filename": "/PATCHSET_LEVEL",
+        "patchSetId": 2
+      },
+      "lineNbr": 0,
+      "author": {
+        "id": 32442
+      },
+      "writtenOn": "2026-10-02T04:21:29Z",
+      "side": 1,
+      "message": "can you pick it over to qcom_sm8250 too?",
+      "revId": "2af5306961aebce4cc30098c9f12a09f8d906906",
+      "serverId": "1ec6b3db-b2c1-4fa4-84a2-4c7efe89ba71"
+    }
+  ]
+}
